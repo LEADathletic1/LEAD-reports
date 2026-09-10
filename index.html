@@ -311,7 +311,7 @@
     background: var(--gray); color: white; font-weight: 700; font-size: 9.5px;
     text-align: center; line-height: 19px;
   }
-  .rank-badge.gold { background: var(--accent); color: var(--black); }
+  .rank-badge.gold { background: var(--accent); color: #E8E8E8; }
   .pct-good { color: #3E7B3F; font-weight: 700; }
   .pct-mid { color: var(--accent-dark); font-weight: 700; }
   .pct-low { color: #A33A2F; font-weight: 700; }
@@ -353,8 +353,9 @@
     font-size: 10.5px; font-style: italic; color: var(--gray);
     margin-bottom: 14px;
   }
-  .cmj-metrics-grid { display: flex; gap: 20px; margin-bottom: 22px; align-items: flex-start; }
+  .cmj-metrics-grid { display: flex; gap: 12px; margin-bottom: 22px; align-items: flex-start; }
   .cmj-col { flex: 1; min-width: 0; }
+  .cmj-col .s-card { width: 100%; }
   .cmj-col .s-card + .s-card { margin-top: 10px; }
   .cmj-nums-row { display: flex; justify-content: space-between; gap: 6px; }
   .cmj-num-block.right { text-align: right; }
@@ -363,6 +364,29 @@
     font-size: 8.3px; font-weight: 600; text-transform: uppercase;
     letter-spacing: 0.4px; color: var(--gray); display: block; margin-top: 1px;
   }
+  .cmj-tier-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 6px; margin-top: 10px; padding-top: 8px;
+    border-top: 0.75px solid var(--line);
+  }
+  .cmj-tier-badge {
+    background: var(--accent); color: var(--stat-num-color);
+    font-weight: 700; font-size: 10.5px; letter-spacing: 0.3px;
+    padding: 3px 9px; border-radius: 4px; white-space: nowrap;
+  }
+  .cmj-tier-gap {
+    font-size: 8.5px; font-weight: 600; color: var(--gray);
+    text-align: right; line-height: 1.25;
+  }
+  .cmj-top5-grid { display: flex; gap: 12px; margin-bottom: 22px; align-items: flex-start; }
+  .cmj-top5-col { flex: 1; min-width: 0; }
+  .cmj-top5-col .s-card { width: 100%; }
+  table.top5 { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  table.top5 td { padding: 6px 4px; border-bottom: 0.75px solid var(--line); }
+  table.top5 tr:last-child td { border-bottom: none; }
+  table.top5 td.rk { width: 22px; }
+  table.top5 td.val { text-align: right; font-weight: 700; white-space: nowrap; }
+  table.top5 td.nm { font-weight: 500; }
   .cmj-notes-card {
     border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
     page-break-inside: avoid;
@@ -375,6 +399,17 @@
   .cmj-notes-body .metric-note { margin-bottom: 9px; }
   .cmj-notes-body .metric-note:last-child { margin-bottom: 0; }
   .cmj-notes-body .metric-note b { color: var(--accent-dark); }
+  .cmj-priority-line {
+    font-size: 12px; line-height: 1.5; padding: 8px 11px; margin-bottom: 11px;
+    background: var(--accent-light); border-left: 3px solid var(--accent);
+    border-radius: 3px;
+  }
+  .cmj-priority-line b { color: var(--black); }
+  .cmj-priority-tag {
+    display: inline-block; background: var(--accent); color: var(--stat-num-color);
+    font-size: 8px; font-weight: 700; letter-spacing: 0.5px;
+    padding: 1px 5px; border-radius: 3px; vertical-align: 1px; margin-right: 2px;
+  }
   .cmj-notes-footnote {
     margin-top: 10px; padding-top: 8px; border-top: 0.75px solid var(--line);
     font-size: 9.5px; color: var(--gray); font-style: italic;
@@ -439,6 +474,28 @@
       <label class="option-box">
         <input type="radio" name="reportScope" id="scopeTeam" value="team" checked>
         Team Report
+      </label>
+    </div>
+  </div>
+
+  <div class="panel no-print" id="cmjTeamTestPanel" style="display:none; margin-bottom:14px;">
+    <h3>Team Test</h3>
+    <div class="option-box-row">
+      <label class="option-box">
+        <input type="radio" name="cmjTeamTest" value="top5" checked>
+        Top 5
+      </label>
+      <label class="option-box">
+        <input type="radio" name="cmjTeamTest" value="jumpHeight">
+        Jump Height
+      </label>
+      <label class="option-box">
+        <input type="radio" name="cmjTeamTest" value="peakPower">
+        Peak Power Score (W/kg)
+      </label>
+      <label class="option-box">
+        <input type="radio" name="cmjTeamTest" value="mrsi">
+        Movement Efficiency Score (mRSI)
       </label>
     </div>
   </div>
@@ -526,8 +583,12 @@
           <input type="file" id="fileForce" accept=".csv">
         </div>
       </div>
+      <div class="field" id="forceAthleteField" style="display:none;">
+        <label for="forceAthleteSelect">Select Athlete</label>
+        <select id="forceAthleteSelect"></select>
+      </div>
       <div class="hint">Same-day jumps: best attempt used. Averages and best are calculated across every test day; chart shows up to the last 20.</div>
-      <div style="height:70px;"></div>
+      <div style="height:70px;" id="forceSpacer"></div>
     </div>
 
     <div class="panel" id="cmjCompareToPanel">
@@ -603,11 +664,17 @@
       <div id="cmjReport" style="display:none;">
         <div class="cmj-preview-note" id="cmjPreviewNote"></div>
         <div class="cmj-metrics-grid" id="cmjMetricsGrid"></div>
-        <div class="cmj-notes-card">
-          <div class="cmj-notes-head">Coach's Notes</div>
+        <div class="cmj-notes-card" id="cmjNotesCard">
+          <div class="cmj-notes-head">Coach's Notes — How To Improve</div>
           <div class="cmj-notes-body" id="cmjNotesBody"></div>
         </div>
+        <div class="cmj-notes-card" id="cmjGlossaryCard" style="display:none; margin-top:14px;">
+          <div class="cmj-notes-head">Decoding Your Numbers</div>
+          <div class="cmj-notes-body" id="cmjGlossaryBody"></div>
+        </div>
       </div>
+
+      <div class="cmj-top5-grid" id="cmjTop5Grid" style="display:none;"></div>
 
       <div class="footnote" id="footnote"></div>
       <div class="footer-line">LEAD ATHLETIC PERFORMANCE &nbsp;•&nbsp; <span id="footTeam">Session Report</span></div>
@@ -889,7 +956,7 @@ function renderSpeedTeamView(reportType, athletes) {
   document.getElementById('statStrip').innerHTML = `
     <div class="stat-box"><div class="num">${testedCount}</div><div class="label">Athletes Tested</div></div>
     <div class="stat-box"><div class="num">${testedCount ? avgCurrent.toFixed(2) + 's' : '—'}</div><div class="label">Team Avg Current Time</div></div>
-    <div class="stat-box"><div class="num">${fastest ? fastest.current.toFixed(2) + 's' : '—'}</div><div class="label">${fastest ? fastest.Athlete : 'Fastest Time'}</div></div>
+    <div class="stat-box"><div class="num">${fastest ? fastest.current.toFixed(2) + 's' : '—'}</div><div class="label">${fastest ? 'Leader — ' + fastest.Athlete : 'Leader'}</div></div>
     <div class="stat-box"><div class="num">${improved ? improved.delta.toFixed(2) + 's' : '—'}</div><div class="label">${improved ? 'Most Improved — ' + improved.a.Athlete : 'Most Improved'}</div></div>
   `;
 
@@ -1025,7 +1092,40 @@ function renderSpeedAthleteView(reportType, athletes) {
 
 // Comparison tiers for the CMJ benchmark charts. Cutoff values per tier, per
 // metric, per sex are still being finalized — this list is the label set only.
-const CMJ_COMPARISON_TIERS = ['Recreational', 'Varsity', 'JuCo', 'D1', 'Pro'];
+// Normative tiers from LEAD's own jump data. Stored as lower-bound thresholds
+// rather than literal ranges: an athlete is assigned the highest tier whose
+// minimum they meet. The source ranges had gaps (e.g. male jump height 15->16")
+// and boundary overlaps (male power 67 sat in both Varsity and JuCo); threshold
+// logic removes both by construction.
+// Sex is NOT present in the Hawkin CSV — it comes from the Compare To toggle.
+const CMJ_COMPARISON_TIERS = ['Recreational', 'JV', 'Varsity', 'JuCo', 'D1', 'Pro'];
+
+const CMJ_THRESHOLDS = {
+  male: {
+    jumpHeight: { JV: 12, Varsity: 16, JuCo: 20, D1: 22, Pro: 24 },
+    peakPower:  { JV: 50, Varsity: 60, JuCo: 67, D1: 70, Pro: 90 },
+    mrsi:       { JV: 0.40, Varsity: 0.50, JuCo: 0.75, D1: 0.85, Pro: 1.10 },
+  },
+  female: {
+    jumpHeight: { JV: 10, Varsity: 12, JuCo: 15, D1: 16, Pro: 18 },
+    peakPower:  { JV: 42, Varsity: 50, JuCo: 57, D1: 60, Pro: 70 },
+    // D1 corrected from 0.75 to 0.70 — 0.75 left 0.70-0.74 unassigned.
+    mrsi:       { JV: 0.40, Varsity: 0.47, JuCo: 0.65, D1: 0.70, Pro: 0.90 },
+  },
+};
+
+// Returns { tier, nextTier, nextThreshold } for a value in a given metric.
+function classifyCmjTier(value, metricKey) {
+  const table = CMJ_THRESHOLDS[getCompareSex()][metricKey];
+  const ordered = ['JV', 'Varsity', 'JuCo', 'D1', 'Pro'];
+  let tier = 'Recreational';
+  for (const name of ordered) {
+    if (value >= table[name]) tier = name;
+  }
+  const idx = CMJ_COMPARISON_TIERS.indexOf(tier);
+  const nextTier = idx < CMJ_COMPARISON_TIERS.length - 1 ? CMJ_COMPARISON_TIERS[idx + 1] : null;
+  return { tier, nextTier, nextThreshold: nextTier ? table[nextTier] : null };
+}
 
 function getCompareSex() {
   const el = document.querySelector('input[name="cmjCompareSex"]:checked');
@@ -1086,7 +1186,7 @@ function last5Avg(values) {
   return last5.reduce((s, v) => s + v, 0) / last5.length;
 }
 
-function cmjMetricChart(points, formatValue) {
+function cmjMetricChart(points, formatValue, metricKey) {
   const W = 340, H = 150, padX = 14, padY = 16, bottomLabelSpace = 18;
   const values = points.map(p => p.value);
   let minV = Math.min(...values), maxV = Math.max(...values);
@@ -1094,6 +1194,20 @@ function cmjMetricChart(points, formatValue) {
   const n = points.length;
   const xStep = n > 1 ? (W - 2 * padX) / (n - 1) : 0;
   const plotH = H - padY - bottomLabelSpace;
+
+  // Faint tier lines so the athlete can see the next level up in context.
+  // Only lines that actually fall inside the visible value range are drawn.
+  let tierLines = '';
+  if (metricKey) {
+    const table = CMJ_THRESHOLDS[getCompareSex()][metricKey];
+    for (const [tierName, threshold] of Object.entries(table)) {
+      if (threshold <= minV || threshold >= maxV) continue;
+      const ty = padY + ((threshold - minV) / (maxV - minV)) * (plotH - padY);
+      tierLines += `<line x1="${padX}" y1="${ty.toFixed(1)}" x2="${W - padX}" y2="${ty.toFixed(1)}" style="stroke:var(--gray);stroke-width:0.6;stroke-dasharray:3 3;opacity:0.5;" />`;
+      tierLines += `<text x="${W - padX}" y="${(ty - 2.5).toFixed(1)}" text-anchor="end" style="font-family:'Barlow SC';font-size:7.5px;fill:var(--gray);opacity:0.85;">${tierName}</text>`;
+    }
+  }
+
   const coords = points.map((p, i) => {
     const x = n > 1 ? padX + i * xStep : W / 2;
     const y = padY + ((p.value - minV) / (maxV - minV)) * (plotH - padY);
@@ -1116,12 +1230,16 @@ function cmjMetricChart(points, formatValue) {
     : '';
   const maxLbl = `<text x="${padX}" y="${padY - 5}" style="font-family:'Barlow SC';font-size:8px;fill:var(--gray);">${formatValue(maxV)}</text>`;
   const minLbl = `<text x="${padX}" y="${padY + (plotH - padY) + 9}" style="font-family:'Barlow SC';font-size:8px;fill:var(--gray);">${formatValue(minV)}</text>`;
-  return `<svg viewBox="0 0 ${W} ${H}" style="display:block; width:100%; height:auto;">${maxLbl}${minLbl}${line}${dots}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" style="display:block; width:100%; height:auto;">${tierLines}${maxLbl}${minLbl}${line}${dots}</svg>`;
 }
 
-function cmjMetricSection(label, allValues, points20, formatValue) {
+function cmjMetricSection(label, allValues, points20, formatValue, metricKey) {
   const avg5 = last5Avg(allValues);
   const best = Math.max(...allValues);
+  const { tier, nextTier, nextThreshold } = classifyCmjTier(avg5, metricKey);
+  const gapText = nextTier
+    ? `${formatValue(nextThreshold - avg5)} to reach ${nextTier}`
+    : 'Top tier reached';
   return `
     <div class="cmj-col">
       <div class="s-card">
@@ -1137,26 +1255,354 @@ function cmjMetricSection(label, allValues, points20, formatValue) {
               <span class="cmj-num-lbl">All-Time Best</span>
             </div>
           </div>
+          <div class="cmj-tier-row">
+            <span class="cmj-tier-badge">${tier} Level</span>
+            <span class="cmj-tier-gap">${gapText}</span>
+          </div>
         </div>
       </div>
       <div class="s-card">
         <div class="s-card-body" style="padding-top:10px;">
-          ${cmjMetricChart(points20, formatValue)}
+          ${cmjMetricChart(points20, formatValue, metricKey)}
         </div>
       </div>
     </div>`;
 }
 
+function populateForceAthleteSelect(names) {
+  const field = document.getElementById('forceAthleteField');
+  const sel = document.getElementById('forceAthleteSelect');
+
+  // Only surface the picker when the export actually holds more than one athlete.
+  if (names.length <= 1) {
+    field.style.display = 'none';
+    sel.innerHTML = '';
+    return null;
+  }
+
+  field.style.display = 'block';
+  const existing = Array.from(sel.options).map(o => o.value).join('|');
+  if (existing !== names.join('|')) {
+    const prev = sel.value;
+    sel.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join('');
+    sel.value = names.includes(prev) ? prev : names[0];
+  }
+  return sel.value;
+}
+
+/* ---- CMJ Team views ---- */
+const CMJ_METRIC_META = {
+  jumpHeight: { label: 'Jump Height', fmt: (v) => `${v.toFixed(1)}"`, unit: '"' },
+  peakPower:  { label: 'Peak Power Score (W/kg)', fmt: (v) => v.toFixed(1), unit: '' },
+  mrsi:       { label: 'Movement Efficiency Score (mRSI)', fmt: (v) => v.toFixed(2), unit: '' },
+};
+
+function getCmjTeamTest() {
+  const el = document.querySelector('input[name="cmjTeamTest"]:checked');
+  return el ? el.value : 'top5';
+}
+
+// Builds per-athlete series for one metric: current (most recent test day),
+// best, first, and the full chronological point list for charting.
+function buildCmjTeamSeries(parsedRows, metricKey) {
+  const byAthlete = new Map();
+  for (const r of parsedRows) {
+    if (!r.name) continue;
+    if (!byAthlete.has(r.name)) byAthlete.set(r.name, []);
+    byAthlete.get(r.name).push(r);
+  }
+  const out = [];
+  for (const [name, rows] of byAthlete) {
+    const daily = condenseToDailyBest(rows);
+    const points = daily.map(r => ({ date: r.date, value: r[metricKey] }))
+                        .filter(p => Number.isFinite(p.value) && p.value > 0);
+    if (!points.length) continue;
+    const values = points.map(p => p.value);
+    out.push({
+      Athlete: name,
+      points,
+      current: values[values.length - 1],
+      first: values[0],
+      best: Math.max(...values),
+      testsCount: points.length,
+    });
+  }
+  // Higher is better for all three CMJ metrics.
+  out.sort((a, b) => b.current - a.current || b.best - a.best);
+  out.forEach((a, i) => a.Rank = i + 1);
+  return out;
+}
+
+function renderCmjTop5(parsedRows, athleteName) {
+  document.getElementById('cmjReport').style.display = 'none';
+  document.getElementById('speedCards').style.display = 'none';
+  document.getElementById('rosterTable').innerHTML = '';
+  const grid = document.getElementById('cmjTop5Grid');
+  grid.style.display = 'flex';
+
+  const totals = [];
+  let html = '';
+  for (const [key, meta] of Object.entries(CMJ_METRIC_META)) {
+    const series = buildCmjTeamSeries(parsedRows, key);
+    totals.push(series.length);
+    const top5 = series.slice(0, 5);
+    let rowsHtml = '';
+    top5.forEach((a, i) => {
+      rowsHtml += `<tr>
+        <td class="rk"><span class="rank-badge ${i < 3 ? 'gold' : ''}">${i + 1}</span></td>
+        <td class="nm">${a.Athlete}</td>
+        <td class="val">${meta.fmt(a.current)}</td>
+      </tr>`;
+    });
+    if (!rowsHtml) rowsHtml = '<tr><td class="nm" style="color:var(--gray);">No data</td></tr>';
+    html += `<div class="cmj-top5-col">
+      <div class="s-card">
+        <div class="s-card-head"><span class="name">${meta.label}</span></div>
+        <div class="s-card-body"><table class="top5"><tbody>${rowsHtml}</tbody></table></div>
+      </div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+
+  // Athletes Improved: counts an athlete once if their most recent test day beats
+  // their first on ANY of the three metrics. Athletes with a single test day on
+  // file are excluded — there's nothing to compare against yet.
+  const improvedNames = new Set();
+  const testDaysByAthlete = new Map();
+  for (const key of Object.keys(CMJ_METRIC_META)) {
+    for (const a of buildCmjTeamSeries(parsedRows, key)) {
+      testDaysByAthlete.set(a.Athlete, Math.max(testDaysByAthlete.get(a.Athlete) || 0, a.testsCount));
+      if (a.testsCount >= 2 && a.current > a.first) improvedNames.add(a.Athlete);
+    }
+  }
+  const totalTests = Array.from(testDaysByAthlete.values()).reduce((s, n) => s + n, 0);
+
+  const athleteCount = Math.max(...totals, 0);
+  document.getElementById('statStrip').innerHTML = `
+    <div class="stat-box"><div class="num">${athleteCount}</div><div class="label">Athletes Tested</div></div>
+    <div class="stat-box"><div class="num">${improvedNames.size}</div><div class="label">Athletes Improved</div></div>
+    <div class="stat-box"><div class="num">${totalTests}</div><div class="label">Total Tests</div></div>
+  `;
+  document.getElementById('outSubtitle').textContent = 'Team Leaderboard — Top 5 by Metric';
+  document.getElementById('footnote').textContent =
+    'Ranked by each athlete\u2019s most recent test day. Where several jumps were logged on one day, the best attempt is used. "Athletes Improved" counts anyone whose latest test beats their first in at least one metric.';
+}
+
+function renderCmjTeamMetric(parsedRows, metricKey) {
+  document.getElementById('cmjReport').style.display = 'none';
+  document.getElementById('cmjTop5Grid').style.display = 'none';
+
+  const meta = CMJ_METRIC_META[metricKey];
+  const athletes = buildCmjTeamSeries(parsedRows, metricKey);
+  const count = athletes.length;
+  const avgCurrent = count ? athletes.reduce((s, a) => s + a.current, 0) / count : 0;
+  const leader = athletes[0] || null;
+  const improved = athletes
+    .filter(a => a.testsCount >= 2)
+    .map(a => ({ a, delta: a.current - a.first }))
+    .sort((x, y) => y.delta - x.delta)[0];
+
+  document.getElementById('statStrip').innerHTML = `
+    <div class="stat-box"><div class="num">${count}</div><div class="label">Athletes Tested</div></div>
+    <div class="stat-box"><div class="num">${count ? meta.fmt(avgCurrent) : '—'}</div><div class="label">Team Average</div></div>
+    <div class="stat-box"><div class="num">${leader ? meta.fmt(leader.current) : '—'}</div><div class="label">${leader ? 'Leader — ' + leader.Athlete : 'Leader'}</div></div>
+    <div class="stat-box"><div class="num">${improved ? '+' + meta.fmt(improved.delta) : '—'}</div><div class="label">${improved ? 'Most Improved — ' + improved.a.Athlete : 'Most Improved'}</div></div>
+  `;
+
+  let html = `<thead><tr>
+    <th style="width:6%;">Rank</th>
+    <th style="width:26%;">Athlete</th>
+    <th class="num" style="width:14%;">Current</th>
+    <th class="num" style="width:14%;">Best</th>
+    <th class="num" style="width:12%;">Tests Taken</th>
+    <th class="num" style="width:14%;">Change</th>
+  </tr></thead><tbody>`;
+  for (const a of athletes) {
+    const delta = a.testsCount >= 2 ? a.current - a.first : null;
+    let deltaCell = '<span class="sub">—</span>';
+    if (delta !== null) {
+      // Higher is better here, so a rise is an improvement.
+      const cls = delta > 0.005 ? 'up' : delta < -0.005 ? 'down' : 'flat';
+      const sign = delta > 0 ? '+' : '';
+      deltaCell = `<span class="delta-cell ${cls}">${sign}${meta.fmt(delta)}</span>`;
+    }
+    html += `<tr class="${a.Rank <= 3 ? 'top3' : ''}">
+      <td><span class="rank-badge ${a.Rank <= 3 ? 'gold' : ''}">${a.Rank}</span></td>
+      <td>${a.Athlete}</td>
+      <td class="num">${meta.fmt(a.current)}</td>
+      <td class="num">${meta.fmt(a.best)}</td>
+      <td class="num">${a.testsCount}</td>
+      <td class="num">${deltaCell}</td>
+    </tr>`;
+  }
+  html += '</tbody>';
+  document.getElementById('rosterTable').innerHTML = html;
+
+  document.getElementById('outSubtitle').textContent = `Team Summary — Ranked by Current ${meta.label} (Highest First)`;
+  document.getElementById('footnote').textContent =
+    'Ranked by most recent test day, highest first. "Change" compares the most recent test to each athlete\u2019s first test on file; athletes with only one test show no change value. Where several jumps were logged on one day, the best attempt is used.';
+
+  const cardsWrap = document.getElementById('speedCards');
+  cardsWrap.style.display = 'flex';
+  let cardsHtml = '';
+  for (const a of athletes) {
+    const delta = a.testsCount >= 2 ? a.current - a.first : null;
+    let deltaHtml = '<div class="s-card-delta flat">Single test on file</div>';
+    if (delta !== null) {
+      const cls = delta > 0.005 ? 'up' : delta < -0.005 ? 'down' : 'flat';
+      const sign = delta > 0 ? '+' : '';
+      const word = cls === 'up' ? 'gain' : cls === 'down' ? 'drop' : 'no change';
+      deltaHtml = `<div class="s-card-delta ${cls}">${sign}${meta.fmt(delta)} ${word} since first test</div>`;
+    }
+    cardsHtml += `<div class="s-card">
+      <div class="s-card-head">
+        <span class="name">${a.Athlete}</span>
+        <span class="rank">Rank ${a.Rank} / ${athletes.length}</span>
+      </div>
+      <div class="s-card-body">
+        <div class="s-card-current">
+          <span class="big">${meta.fmt(a.current)}</span>
+          <span class="lbl">Current</span>
+        </div>
+        ${deltaHtml}
+        ${sparkline(a.points)}
+        <div class="s-card-meta">${a.testsCount} test${a.testsCount > 1 ? 's' : ''} on file &nbsp;•&nbsp; best ${meta.fmt(a.best)} &nbsp;•&nbsp; ${fmtDateLong(a.points[0].date)} – ${fmtDateLong(a.points[a.points.length - 1].date)}</div>
+      </div>
+    </div>`;
+  }
+  cardsWrap.innerHTML = cardsHtml;
+}
+
+function renderCmjTeamReport() {
+  const parsedRows = parseCmjRows(forceData.rows);
+  if (!parsedRows.length) {
+    document.getElementById('cmjPreviewNote').textContent = 'No usable rows found in this file — check that it\u2019s a Hawkin Dynamics CMJ export.';
+    return;
+  }
+  const teamName = document.getElementById('teamName').value || 'Team Name';
+  const coach = document.getElementById('coachName').value;
+  const dates = parsedRows.map(r => r.date).sort();
+
+  document.getElementById('outTeam').textContent = teamName;
+  document.getElementById('outTitle').textContent = document.getElementById('reportTitle').value || 'CMJ Profile Report';
+  document.getElementById('footTeam').textContent = `${teamName} CMJ Profile Report`;
+  document.getElementById('outMeta').textContent =
+    `${fmtDateLong(dates[0])} to ${fmtDateLong(dates[dates.length - 1])}${coach ? '  •  Created for Coach ' + coach : ''}`;
+
+  const test = getCmjTeamTest();
+  if (test === 'top5') {
+    renderCmjTop5(parsedRows, teamName);
+  } else {
+    renderCmjTeamMetric(parsedRows, test);
+  }
+}
+
+/* ---- Coach's Notes: how to improve, banded by current level ---- */
+// Each entry is capped at two sentences by design — this page gets read by
+// athletes and parents, not just coaches.
+const CMJ_IMPROVEMENT_NOTES = {
+  jumpHeight: {
+    label: 'Jump Height',
+    foundation: 'Build the strength base first — squats, trap bar deadlifts, and split squats two to three times per week. Everything else on this page is built on top of raw lower-body strength.',
+    developing: 'Keep the strength work, but add jump-specific training: box jumps, broad jumps, and lightly loaded jumps. Stop each set the moment height drops off — quality beats volume here.',
+    advanced: 'Hold your strength base and sharpen how fast you apply it with weighted jumps and Olympic lift variations. At this level gains come from timing and technique, not more reps.',
+  },
+  peakPower: {
+    label: 'Peak Power Score',
+    foundation: 'Train moving lighter loads fast — jump squats, medicine ball throws, and short sprints. This score is strength divided by bodyweight, so how fast you move matters more than how much you lift.',
+    developing: 'Pair heavy strength work with explosive work in the same session — heavy first, jumps and throws while still fresh. Because this is a per-pound score, body composition moves it too.',
+    advanced: 'Prioritize high-velocity work and recovery — power falls off fast under fatigue. Track bar speed and end the set when velocity drops below target.',
+  },
+  mrsi: {
+    label: 'Movement Efficiency Score',
+    foundation: 'Work on a quicker dip-and-drive: same jump, less time getting into it. Fast, shallow countermovement jumps teach the body to stop wasting time on the way down.',
+    developing: 'Compress the transition from down to up without giving up height. Depth drops and accelerated eccentric work sharpen that changeover.',
+    advanced: 'Fine-tune the elastic qualities with high-intensity, low-volume reactive work. At this level the wins come from shortening the countermovement and cleaning up timing.',
+  },
+};
+
+// What each metric actually is, in plain language for athletes and parents.
+const CMJ_METRIC_GLOSSARY = {
+  jumpHeight: {
+    label: 'Jump Height',
+    text: 'This is the actual test — jump as high as you can, using whatever strategy is natural to you. That number is the goal; the other two metrics decode <em>how</em> you got there.',
+  },
+  peakPower: {
+    label: 'Peak Relative Propulsive Power (W/kg)',
+    text: 'How much power you produce per pound of bodyweight on the way up. It is why a smaller athlete can out-jump a bigger one, and it carries straight over to sprinting, cutting, and first-step quickness.',
+  },
+  mrsi: {
+    label: 'Modified Reactive Strength Index (mRSI)',
+    text: 'Your jump height divided by how long it takes you to launch. It measures how quickly you turn strength into movement — the gap between being strong and being explosive when a play is actually happening.',
+  },
+};
+
+function improvementBandFor(tier) {
+  if (tier === 'Recreational' || tier === 'JV') return 'foundation';
+  if (tier === 'Varsity' || tier === 'JuCo') return 'developing';
+  return 'advanced';
+}
+
+// "Low hanging fruit" = the metric closest to its next tier, measured relative to
+// the athlete's own current value so the three metrics stay comparable despite
+// living on completely different scales.
+function cmjPriorityMetric(metricStates) {
+  const candidates = metricStates.filter(m => m.nextThreshold !== null);
+  if (!candidates.length) return null;
+  return candidates
+    .map(m => ({ ...m, relGap: (m.nextThreshold - m.avg5) / m.avg5 }))
+    .sort((a, b) => a.relGap - b.relGap)[0];
+}
+
+function buildCmjNotes(metricStates) {
+  const priority = cmjPriorityMetric(metricStates);
+  let html = '';
+
+  if (priority) {
+    html += `<div class="cmj-priority-line"><b>Biggest opportunity right now:</b> ${CMJ_IMPROVEMENT_NOTES[priority.key].label} — the closest of the three to reaching ${priority.nextTier} level.</div>`;
+  }
+
+  for (const m of metricStates) {
+    const entry = CMJ_IMPROVEMENT_NOTES[m.key];
+    const band = improvementBandFor(m.tier);
+    const flag = priority && priority.key === m.key
+      ? ' <span class="cmj-priority-tag">PRIORITY</span>'
+      : '';
+    html += `<div class="metric-note"><b>${entry.label}:</b>${flag} ${entry[band]}</div>`;
+  }
+  return html;
+}
+
+function buildCmjGlossary() {
+  let rows = '';
+  for (const key of ['jumpHeight', 'peakPower', 'mrsi']) {
+    const g = CMJ_METRIC_GLOSSARY[key];
+    rows += `<div class="metric-note"><b>${g.label}:</b> ${g.text}</div>`;
+  }
+  return rows;
+}
+
 function renderCmjReport() {
-  const rows = condenseToDailyBest(parseCmjRows(forceData.rows));
-  if (!rows.length) {
+  const parsedRows = parseCmjRows(forceData.rows);
+  if (!parsedRows.length) {
     document.getElementById('cmjPreviewNote').textContent = 'No usable rows found in this file — check that it\u2019s a Hawkin Dynamics CMJ export.';
     document.getElementById('cmjMetricsGrid').innerHTML = '';
     document.getElementById('cmjNotesBody').innerHTML = '';
+    document.getElementById('forceAthleteField').style.display = 'none';
     return;
   }
 
-  const detectedName = rows[rows.length - 1].name;
+  const names = [...new Set(parsedRows.map(r => r.name))].filter(Boolean).sort();
+  const selectedName = populateForceAthleteSelect(names);
+
+  // Filter to the chosen athlete BEFORE condensing — condensing keys on date
+  // alone, so collapsing a multi-athlete file first would discard every athlete
+  // but one whenever they tested on the same day.
+  const athleteRows = selectedName ? parsedRows.filter(r => r.name === selectedName) : parsedRows;
+  const rows = condenseToDailyBest(athleteRows);
+  if (!rows.length) return;
+
+  const detectedName = selectedName || rows[rows.length - 1].name;
   if (!teamNameTouched) {
     document.getElementById('teamName').value = detectedName;
   }
@@ -1182,16 +1628,19 @@ function renderCmjReport() {
   const mrsi20 = last20.map(r => ({ date: r.date, value: r.mrsi }));
 
   document.getElementById('cmjMetricsGrid').innerHTML =
-    cmjMetricSection('Jump Height', jumpAll, jump20, fmtIn) +
-    cmjMetricSection('Peak Power Score (W/kg)', powerAll, power20, fmtWkg) +
-    cmjMetricSection('Movement Efficiency Score (mRSI)', mrsiAll, mrsi20, fmtMrsi);
+    cmjMetricSection('Jump Height', jumpAll, jump20, fmtIn, 'jumpHeight') +
+    cmjMetricSection('Peak Power Score (W/kg)', powerAll, power20, fmtWkg, 'peakPower') +
+    cmjMetricSection('Movement Efficiency Score (mRSI)', mrsiAll, mrsi20, fmtMrsi, 'mrsi');
 
-  document.getElementById('cmjNotesBody').innerHTML = `
-    <div class="metric-note"><b>Jump Height:</b> [Sample] Currently trending upward and sitting above team average — strong lower-body explosiveness. Continue reactive strength work to build on this.</div>
-    <div class="metric-note"><b>Peak Power Score:</b> [Sample] Consistent improvement across the last 5 tests — a good sign of increasing force production.</div>
-    <div class="metric-note"><b>Movement Efficiency Score (mRSI):</b> [Sample] Slightly below target threshold — focus on landing mechanics and ground contact time to improve reactive efficiency.</div>
-    <div class="cmj-notes-footnote">This section will auto-populate from performance thresholds once the scoring logic is built — text shown here is a placeholder to preview layout only.</div>
-  `;
+  const metricStates = [
+    { key: 'jumpHeight', avg5: last5Avg(jumpAll) },
+    { key: 'peakPower', avg5: last5Avg(powerAll) },
+    { key: 'mrsi', avg5: last5Avg(mrsiAll) },
+  ].map(m => ({ ...m, ...classifyCmjTier(m.avg5, m.key) }));
+
+  document.getElementById('cmjNotesBody').innerHTML = buildCmjNotes(metricStates);
+  document.getElementById('cmjGlossaryBody').innerHTML = buildCmjGlossary();
+  document.getElementById('cmjGlossaryCard').style.display = 'block';
 
   document.getElementById('outTeam').textContent = athleteName;
   document.getElementById('outTitle').textContent = document.getElementById('reportTitle').value || 'CMJ Profile Report';
@@ -1362,11 +1811,21 @@ function render() {
     cardsWrap.innerHTML = '';
     document.getElementById('statStrip').innerHTML = '';
     document.getElementById('rosterTable').innerHTML = '';
+
+    if (getReportScope() === 'team') {
+      cmjWrap.style.display = 'none';
+      document.getElementById('forceAthleteField').style.display = 'none';
+      renderCmjTeamReport();
+      return;
+    }
+
+    document.getElementById('cmjTop5Grid').style.display = 'none';
     cmjWrap.style.display = 'block';
     renderCmjReport();
     return;
   }
   cmjWrap.style.display = 'none';
+  document.getElementById('cmjTop5Grid').style.display = 'none';
 
   if (currentReportType === 'speed10' || currentReportType === 'speed30') {
     if (!speedData) {
@@ -1473,7 +1932,21 @@ setupDropzone('dzSpeed', 'fileSpeed', 'dzSpeedFile', (data) => {
 });
 setupDropzone('dzForce', 'fileForce', 'dzForceFile', (data) => {
   forceData = data;
+  // A new file means a new roster — let the name auto-fill again.
+  teamNameTouched = false;
   render();
+});
+
+document.getElementById('forceAthleteSelect').addEventListener('change', () => {
+  // Switching athletes should re-fill the name field with the new pick.
+  teamNameTouched = false;
+  render();
+});
+
+document.querySelectorAll('input[name="cmjTeamTest"]').forEach(r => {
+  r.addEventListener('change', () => {
+    if (currentReportType === 'force') render();
+  });
 });
 
 document.querySelectorAll('input[name="cmjCompareSex"]').forEach(r => {
@@ -1574,7 +2047,8 @@ function updateSpeedSourceInstruction() {
 
 function isReportReady(type, scope) {
   if (READY_TYPES.has(type)) return true;
-  if (type === 'force' && scope === 'athlete') return true; // CMJ Profile Report — athlete view only, for now
+  // CMJ Profile Report is built for both athlete and team scopes.
+  if (type === 'force') return true;
   return false;
 }
 
@@ -1592,6 +2066,12 @@ function updateReadyState() {
   document.getElementById('rosterDataPanel').style.display = val === 'training_summary' ? 'block' : 'none';
   document.getElementById('speedDataPanel').style.display = (val === 'speed10' || val === 'speed30') ? 'block' : 'none';
   document.getElementById('forceColumnWrap').style.display = (val === 'force') ? 'flex' : 'none';
+  const forceTeamMode = (val === 'force' && getReportScope() === 'team');
+  document.getElementById('cmjTeamTestPanel').style.display = forceTeamMode ? 'block' : 'none';
+  // Compare To only drives athlete-report tier thresholds, so it's dead weight
+  // on team reports — hide it rather than show a control that does nothing.
+  document.getElementById('cmjCompareToPanel').style.display = forceTeamMode ? 'none' : 'block';
+  document.getElementById('forceSpacer').style.display = forceTeamMode ? 'none' : 'block';
 
   if (isReady && !titleTouched) {
     document.getElementById('reportTitle').value = REPORT_TITLES[val];
