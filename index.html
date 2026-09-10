@@ -246,6 +246,16 @@
   .hint {
     font-size: 10.5px; color: var(--gray); margin-top: 8px; line-height: 1.4;
   }
+  .field-header-row {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  }
+  .field-header-row label { margin-bottom: 0; }
+  .template-link {
+    font-size: 10.5px; font-weight: 600; color: var(--accent-dark);
+    text-decoration: underline; cursor: pointer; white-space: nowrap;
+    background: none; border: none; padding: 0; font-family: 'Barlow SC', Arial, sans-serif;
+  }
+  .template-link:hover { color: var(--black); }
 
   /* ---------------- Report (printable) ---------------- */
   .report-wrap {
@@ -516,7 +526,10 @@
         <label>Find this in: Lumin Sports → Reports → Session Attendance → select group, program &amp; date range → Export CSV</label>
       </div>
       <div class="field">
-        <label>Period 1 CSV <span id="p1RequiredTag">(required)</span></label>
+        <div class="field-header-row">
+          <label>Period 1 CSV <span id="p1RequiredTag">(required)</span></label>
+          <button type="button" class="template-link" id="rosterTemplateBtn">Download CSV Template</button>
+        </div>
         <div class="dropzone" id="dz1">
           <div class="dz-title">Drop CSV here or click to browse</div>
           <div class="dz-sub">Session Attendance Report export</div>
@@ -552,7 +565,7 @@
 
       <div class="field">
         <label for="excludeNames">Exclude From Report (comma-separated)</label>
-        <textarea id="excludeNames">Ben Petersen, Blair Orr</textarea>
+        <textarea id="excludeNames"></textarea>
       </div>
     </div>
 
@@ -562,7 +575,10 @@
         <label id="speedSourceLabel"></label>
       </div>
       <div class="field">
-        <label>Physical Testing Report CSV <span>(required)</span></label>
+        <div class="field-header-row">
+          <label>Physical Testing Report CSV <span>(required)</span></label>
+          <button type="button" class="template-link" id="speedTemplateBtn">Download CSV Template</button>
+        </div>
         <div class="dropzone" id="dzSpeed">
           <div class="dz-title">Drop CSV here or click to browse</div>
           <div class="dz-sub">Lumin Physical Testing Report export — multiple test dates supported</div>
@@ -584,7 +600,10 @@
         <label>Find This In: Hawkin Cloud → Select Athlete → Tests → Export Tests</label>
       </div>
       <div class="field">
-        <label>Hawkin CMJ Export CSV <span>(required)</span></label>
+        <div class="field-header-row">
+          <label>Hawkin CMJ Export CSV <span>(required)</span></label>
+          <button type="button" class="template-link" id="cmjTemplateBtn">Download CSV Template</button>
+        </div>
         <div class="dropzone" id="dzForce">
           <div class="dz-title">Drop CSV here or click to browse</div>
           <div class="dz-sub">Hawkin Dynamics Countermovement Jump export — one row per test</div>
@@ -678,7 +697,7 @@
           <div class="cmj-notes-body" id="cmjNotesBody"></div>
         </div>
         <div class="cmj-notes-card" id="cmjGlossaryCard" style="display:none; margin-top:14px;">
-          <div class="cmj-notes-head">Decoding Your Numbers</div>
+          <div class="cmj-notes-head">Decoding the Numbers</div>
           <div class="cmj-notes-body" id="cmjGlossaryBody"></div>
         </div>
 
@@ -699,7 +718,6 @@
 </div>
 
 <script>
-const EXCLUDE_DEFAULT = ['ben petersen', 'ben peterson', 'blair orr'];
 const NAME_OVERRIDES = { 'parker.morris@student.rjuhsd.us': 'Parker Morris' };
 const PRESETS = [
   { hex: '#B8933D', name: 'LEAD Gold' },
@@ -750,7 +768,7 @@ function cleanName(raw) {
 function getExcludeSet() {
   const txt = document.getElementById('excludeNames').value || '';
   const parts = txt.split(/[,\n]/).map(s => s.trim().toLowerCase()).filter(Boolean);
-  return new Set([...EXCLUDE_DEFAULT, ...parts]);
+  return new Set(parts);
 }
 
 function guessDateRangeFromFilename(name) {
@@ -760,7 +778,7 @@ function guessDateRangeFromFilename(name) {
     const d = new Date(s + 'T00:00:00');
     return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
   };
-  return `${fmt(m[1])} – ${fmt(m[2])}`;
+  return `${fmt(m[1])} to ${fmt(m[2])}`;
 }
 
 function stripExt(name) {
@@ -940,6 +958,18 @@ function speedDeltaClass(delta) {
   return 'flat';
 }
 
+// Same fix as cmjFormatDelta: classify and format from the SAME rounded value
+// so text and color always agree, and round-tripping avoids a literal "-0.00"
+// string (e.g. (-0.003).toFixed(2) === "-0.00", which would otherwise pair a
+// negative sign with a number that reads as unchanged).
+function speedFormatDelta(delta) {
+  const rounded = Number(delta.toFixed(2));
+  const cls = rounded < 0 ? 'up' : rounded > 0 ? 'down' : 'flat';
+  const sign = rounded > 0 ? '+' : '';
+  const text = `${sign}${(Math.abs(rounded) === 0 ? 0 : rounded).toFixed(2)}s`;
+  return { cls, text };
+}
+
 function getReportScope() {
   const el = document.querySelector('input[name="reportScope"]:checked');
   return el ? el.value : 'team';
@@ -988,10 +1018,9 @@ function renderSpeedTeamView(reportType, athletes) {
     const delta = a.testsCount >= 2 ? a.current - a.first : null;
     let deltaCell = '<span class="sub">—</span>';
     if (delta !== null) {
-      const cls = speedDeltaClass(delta);
+      const d = speedFormatDelta(delta);
       const clsMap = { up: 'delta-cell up', down: 'delta-cell down', flat: 'delta-cell flat' };
-      const sign = delta > 0 ? '+' : '';
-      deltaCell = `<span class="${clsMap[cls]}">${sign}${delta.toFixed(2)}s</span>`;
+      deltaCell = `<span class="${clsMap[d.cls]}">${d.text}</span>`;
     }
     html += `<tr class="${a.Rank <= 3 ? 'top3' : ''}">
       <td><span class="rank-badge ${a.Rank <= 3 ? 'gold' : ''}">${a.Rank}</span></td>
@@ -1017,10 +1046,9 @@ function renderSpeedTeamView(reportType, athletes) {
     const delta = a.testsCount >= 2 ? a.current - a.first : null;
     let deltaHtml = '<div class="s-card-delta flat">Single test on file</div>';
     if (delta !== null) {
-      const cls = speedDeltaClass(delta);
-      const sign = delta > 0 ? '+' : '';
-      const word = cls === 'up' ? 'faster' : cls === 'down' ? 'slower' : 'no change';
-      deltaHtml = `<div class="s-card-delta ${cls}">${sign}${delta.toFixed(2)}s ${word} since first test</div>`;
+      const d = speedFormatDelta(delta);
+      const word = d.cls === 'up' ? 'faster' : d.cls === 'down' ? 'slower' : 'no change';
+      deltaHtml = `<div class="s-card-delta ${d.cls}">${d.text} ${word} since first test</div>`;
     }
     cardsHtml += `<div class="s-card">
       <div class="s-card-head">
@@ -1075,10 +1103,9 @@ function renderSpeedAthleteView(reportType, athletes) {
     let changeCell = '<span class="sub">—</span>';
     if (i > 0) {
       const d = p.value - athlete.points[i - 1].value;
-      const cls = speedDeltaClass(d);
+      const fd = speedFormatDelta(d);
       const clsMap = { up: 'delta-cell up', down: 'delta-cell down', flat: 'delta-cell flat' };
-      const sign = d > 0 ? '+' : '';
-      changeCell = `<span class="${clsMap[cls]}">${sign}${d.toFixed(2)}s</span>`;
+      changeCell = `<span class="${clsMap[fd.cls]}">${fd.text}</span>`;
     }
     const isBest = p.value === athlete.best;
     html += `<tr class="${isBest ? 'top3' : ''}">
@@ -1115,6 +1142,12 @@ function renderSpeedAthleteView(reportType, athletes) {
 // logic removes both by construction.
 // Sex is NOT present in the Hawkin CSV — it comes from the Compare To toggle.
 const CMJ_COMPARISON_TIERS = ['Recreational', 'JV', 'Varsity', 'JuCo', 'D1', 'Pro'];
+
+// Internal keys stay the same (used throughout CMJ_THRESHOLDS and the tier
+// ordering logic) — this only renames what's shown to athletes and parents.
+const CMJ_TIER_DISPLAY = {
+  Recreational: 'Rec', JV: 'JV', Varsity: 'Varsity', JuCo: 'College', D1: 'Elite College', Pro: 'Pro',
+};
 
 const CMJ_THRESHOLDS = {
   male: {
@@ -1220,7 +1253,7 @@ function cmjMetricChart(points, formatValue, metricKey) {
       if (threshold <= minV || threshold >= maxV) continue;
       const ty = padY + ((threshold - minV) / (maxV - minV)) * (plotH - padY);
       tierLines += `<line x1="${padX}" y1="${ty.toFixed(1)}" x2="${W - padX}" y2="${ty.toFixed(1)}" style="stroke:var(--gray);stroke-width:0.6;stroke-dasharray:3 3;opacity:0.5;" />`;
-      tierLines += `<text x="${W - padX}" y="${(ty - 2.5).toFixed(1)}" text-anchor="end" style="font-family:'Barlow SC';font-size:7.5px;fill:var(--gray);opacity:0.85;">${tierName}</text>`;
+      tierLines += `<text x="${W - padX}" y="${(ty - 2.5).toFixed(1)}" text-anchor="end" style="font-family:'Barlow SC';font-size:7.5px;fill:var(--gray);opacity:0.85;">${CMJ_TIER_DISPLAY[tierName] || tierName}</text>`;
     }
   }
 
@@ -1254,7 +1287,7 @@ function cmjMetricSection(label, allValues, points20, formatValue, metricKey) {
   const best = Math.max(...allValues);
   const { tier, nextTier, nextThreshold } = classifyCmjTier(avg5, metricKey);
   const gapText = nextTier
-    ? `${formatValue(nextThreshold - avg5)} to reach ${nextTier}`
+    ? `${formatValue(nextThreshold - avg5)} to reach ${CMJ_TIER_DISPLAY[nextTier] || nextTier}`
     : 'Top tier reached';
   return `
     <div class="cmj-col">
@@ -1272,7 +1305,7 @@ function cmjMetricSection(label, allValues, points20, formatValue, metricKey) {
             </div>
           </div>
           <div class="cmj-tier-row">
-            <span class="cmj-tier-badge">${tier} Level</span>
+            <span class="cmj-tier-badge">${CMJ_TIER_DISPLAY[tier] || tier} Level</span>
             <span class="cmj-tier-gap">${gapText}</span>
           </div>
         </div>
@@ -1308,10 +1341,24 @@ function populateForceAthleteSelect(names) {
 
 /* ---- CMJ Team views ---- */
 const CMJ_METRIC_META = {
-  jumpHeight: { label: 'Jump Height', fmt: (v) => `${v.toFixed(1)}"`, unit: '"' },
-  peakPower:  { label: 'Peak Power Score (W/kg)', fmt: (v) => v.toFixed(1), unit: '' },
-  mrsi:       { label: 'Movement Efficiency Score (mRSI)', fmt: (v) => v.toFixed(2), unit: '' },
+  jumpHeight: { label: 'Jump Height', fmt: (v) => `${v.toFixed(1)}"`, decimals: 1 },
+  peakPower:  { label: 'Peak Power Score (W/kg)', fmt: (v) => v.toFixed(1), decimals: 1 },
+  mrsi:       { label: 'Movement Efficiency Score (mRSI)', fmt: (v) => v.toFixed(2), decimals: 2 },
 };
+
+// Classifies a delta as up/down/flat using the SAME rounding precision as its
+// display formatter, so a delta that rounds to "0.0" can never be colored as
+// an improvement or decline — number and color always agree. Also returns the
+// display text directly, since toFixed() on a small negative number produces
+// a literal "-0.0" string otherwise (e.g. (-0.03).toFixed(1) === "-0.0").
+function cmjFormatDelta(delta, metricKey) {
+  const decimals = CMJ_METRIC_META[metricKey].decimals;
+  const rounded = Number(delta.toFixed(decimals));
+  const cls = rounded > 0 ? 'up' : rounded < 0 ? 'down' : 'flat';
+  const sign = rounded > 0 ? '+' : '';
+  const text = `${sign}${CMJ_METRIC_META[metricKey].fmt(Math.abs(rounded) === 0 ? 0 : rounded)}`;
+  return { cls, text };
+}
 
 function getCmjTeamTest() {
   const el = document.querySelector('input[name="cmjTeamTest"]:checked');
@@ -1417,12 +1464,16 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
     .filter(a => a.testsCount >= 2)
     .map(a => ({ a, delta: a.current - a.first }))
     .sort((x, y) => y.delta - x.delta)[0];
+  // Only credit an actual improvement — if the team's best delta still rounds
+  // to zero or negative, nobody genuinely improved, so don't imply otherwise.
+  const improvedFmt = improved ? cmjFormatDelta(improved.delta, metricKey) : null;
+  const showImproved = improvedFmt && improvedFmt.cls === 'up';
 
   document.getElementById('statStrip').innerHTML = `
     <div class="stat-box"><div class="num">${count}</div><div class="label">Athletes Tested</div></div>
     <div class="stat-box"><div class="num">${count ? meta.fmt(avgCurrent) : '—'}</div><div class="label">Team Average</div></div>
     <div class="stat-box"><div class="num">${leader ? meta.fmt(leader.current) : '—'}</div><div class="label">${leader ? 'Leader — ' + leader.Athlete : 'Leader'}</div></div>
-    <div class="stat-box"><div class="num">${improved ? '+' + meta.fmt(improved.delta) : '—'}</div><div class="label">${improved ? 'Most Improved — ' + improved.a.Athlete : 'Most Improved'}</div></div>
+    <div class="stat-box"><div class="num">${showImproved ? improvedFmt.text : '—'}</div><div class="label">${showImproved ? 'Most Improved — ' + improved.a.Athlete : 'Most Improved'}</div></div>
   `;
 
   let html = `<thead><tr>
@@ -1438,9 +1489,8 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
     let deltaCell = '<span class="sub">—</span>';
     if (delta !== null) {
       // Higher is better here, so a rise is an improvement.
-      const cls = delta > 0.005 ? 'up' : delta < -0.005 ? 'down' : 'flat';
-      const sign = delta > 0 ? '+' : '';
-      deltaCell = `<span class="delta-cell ${cls}">${sign}${meta.fmt(delta)}</span>`;
+      const d = cmjFormatDelta(delta, metricKey);
+      deltaCell = `<span class="delta-cell ${d.cls}">${d.text}</span>`;
     }
     html += `<tr class="${a.Rank <= 3 ? 'top3' : ''}">
       <td><span class="rank-badge ${a.Rank <= 3 ? 'gold' : ''}">${a.Rank}</span></td>
@@ -1465,10 +1515,9 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
     const delta = a.testsCount >= 2 ? a.current - a.first : null;
     let deltaHtml = '<div class="s-card-delta flat">Single test on file</div>';
     if (delta !== null) {
-      const cls = delta > 0.005 ? 'up' : delta < -0.005 ? 'down' : 'flat';
-      const sign = delta > 0 ? '+' : '';
-      const word = cls === 'up' ? 'gain' : cls === 'down' ? 'drop' : 'no change';
-      deltaHtml = `<div class="s-card-delta ${cls}">${sign}${meta.fmt(delta)} ${word} since first test</div>`;
+      const d = cmjFormatDelta(delta, metricKey);
+      const word = d.cls === 'up' ? 'gain' : d.cls === 'down' ? 'drop' : 'no change';
+      deltaHtml = `<div class="s-card-delta ${d.cls}">${d.text} ${word} since first test</div>`;
     }
     cardsHtml += `<div class="s-card">
       <div class="s-card-head">
@@ -1492,7 +1541,13 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
 function renderCmjTeamReport() {
   const parsedRows = parseCmjRows(forceData.rows);
   if (!parsedRows.length) {
-    document.getElementById('cmjPreviewNote').textContent = 'No usable rows found in this file — check that it\u2019s a Hawkin Dynamics CMJ export.';
+    // This message must go through the same emptyState the rest of the tool
+    // uses for bad/missing data — cmjPreviewNote lives inside #cmjReport,
+    // which is hidden in Team Report mode, so writing there would be silent.
+    document.getElementById('reportContent').style.display = 'none';
+    document.getElementById('emptyState').textContent =
+      'No usable rows found in this file — check that it\u2019s a Hawkin Dynamics CMJ export.';
+    document.getElementById('emptyState').style.display = 'block';
     return;
   }
   const teamName = document.getElementById('teamName').value || 'Team Name';
@@ -1575,7 +1630,7 @@ function buildCmjNotes(metricStates) {
   let html = '';
 
   if (priority) {
-    html += `<div class="cmj-priority-line"><b>Biggest opportunity right now:</b> ${CMJ_IMPROVEMENT_NOTES[priority.key].label} — the closest of the three to reaching ${priority.nextTier} level.</div>`;
+    html += `<div class="cmj-priority-line"><b>Biggest opportunity right now:</b> ${CMJ_IMPROVEMENT_NOTES[priority.key].label} — the closest of the three to reaching ${CMJ_TIER_DISPLAY[priority.nextTier] || priority.nextTier} level.</div>`;
   }
 
   for (const m of metricStates) {
@@ -1995,6 +2050,9 @@ setupDropzone('dz2', 'file2', 'dz2file', (data) => {
 setupDropzone('dzSpeed', 'fileSpeed', 'dzSpeedFile', (data) => {
   speedData = data;
   if (!document.getElementById('speedLabel').value) document.getElementById('speedLabel').placeholder = data.autoLabel || '';
+  // A new file means a new roster — let the name auto-fill again (matches
+  // the Force dropzone's behavior below; this one was missing it).
+  teamNameTouched = false;
   render();
 });
 setupDropzone('dzForce', 'fileForce', 'dzForceFile', (data) => {
@@ -2002,6 +2060,45 @@ setupDropzone('dzForce', 'fileForce', 'dzForceFile', (data) => {
   // A new file means a new roster — let the name auto-fill again.
   teamNameTouched = false;
   render();
+});
+
+// Downloadable blank CSVs for coaches entering data manually — matches exactly
+// the columns each parser reads, so hand-entered data has no formatting surprises.
+function downloadCsvTemplate(rows, filename) {
+  const csv = rows.map(r => r.join(',')).join('\r\n') + '\r\n';
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('cmjTemplateBtn').addEventListener('click', () => {
+  downloadCsvTemplate([
+    ['Name', 'Date', 'Time', 'Jump Height', 'Peak Relative Propulsive Power', 'mRSI'],
+    ['EXAMPLE - DELETE THIS ROW', '25/12/2026', '15:30:00', '18.5', '65.0', '0.55'],
+  ], 'LEAD_CMJ_Data_Template.csv');
+});
+
+document.getElementById('rosterTemplateBtn').addEventListener('click', () => {
+  downloadCsvTemplate([
+    ['Athlete', 'Sessions Assigned', 'Sessions Completed', 'Sessions Completed (%)', 'Exercises Completed (%)', 'Volume Completed (lbs)'],
+    ['EXAMPLE - DELETE THIS ROW', '10', '7', '70', '68', '4500'],
+  ], 'LEAD_Roster_Data_Template.csv');
+});
+
+document.getElementById('speedTemplateBtn').addEventListener('click', () => {
+  // Date columns must be YYYY-MM-DD — the opposite convention from the CMJ
+  // template's DD/MM/YYYY, so the example dates matter here too.
+  downloadCsvTemplate([
+    ['Athlete', 'Test', '2026-08-01', '2026-08-08'],
+    ['EXAMPLE - DELETE THIS ROW', '10 Yard Sprint (1 Yard Build)', '1.52', '1.48'],
+    ['EXAMPLE - DELETE THIS ROW', '30 Yard Sprint', '4.25', '4.18'],
+  ], 'LEAD_Speed_Data_Template.csv');
 });
 
 document.getElementById('forceAthleteSelect').addEventListener('change', () => {
@@ -2162,6 +2259,11 @@ function applyReportType(val) {
 
 document.getElementById('reportCategory').addEventListener('change', (e) => {
   const cat = e.target.value;
+  // Switching to a whole new report category means a genuinely new context —
+  // whatever name was typed for the last category shouldn't block auto-fill
+  // for this one. (Switching sub-types within the same category, e.g. 10 Yard
+  // -> 30 Yard, does NOT reset this — it's very likely still the same roster.)
+  teamNameTouched = false;
   const testTypePanel = document.getElementById('testTypePanel');
   const testTypeOptions = document.getElementById('testTypeOptions');
 
