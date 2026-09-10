@@ -410,6 +410,15 @@
     font-size: 8px; font-weight: 700; letter-spacing: 0.5px;
     padding: 1px 5px; border-radius: 3px; vertical-align: 1px; margin-right: 2px;
   }
+  .cmj-page-break { height: 26px; }
+  @media print { .cmj-page-break { break-before: page; page-break-before: always; height: 0; } }
+  .cmj-hist-section { margin-bottom: 22px; page-break-inside: avoid; }
+  .cmj-hist-label {
+    font-weight: 700; font-size: 14px; letter-spacing: 0.3px;
+    padding-bottom: 6px; margin-bottom: 10px;
+    border-bottom: 1.5px solid var(--black);
+  }
+  .cmj-hist-note { font-size: 9.5px; color: var(--gray); margin-top: 7px; font-style: italic; }
   .cmj-notes-footnote {
     margin-top: 10px; padding-top: 8px; border-top: 0.75px solid var(--line);
     font-size: 9.5px; color: var(--gray); font-style: italic;
@@ -671,6 +680,13 @@
         <div class="cmj-notes-card" id="cmjGlossaryCard" style="display:none; margin-top:14px;">
           <div class="cmj-notes-head">Decoding Your Numbers</div>
           <div class="cmj-notes-body" id="cmjGlossaryBody"></div>
+        </div>
+
+        <div id="cmjPage2" style="display:none;">
+          <div class="cmj-page-break"></div>
+          <div class="page-title">Metric History</div>
+          <div class="page-subtitle" id="cmjPage2Subtitle">Session-By-Session Progress</div>
+          <div id="cmjHistoryBody"></div>
         </div>
       </div>
 
@@ -1582,6 +1598,45 @@ function buildCmjGlossary() {
   return rows;
 }
 
+function buildCmjHistory(metricSeries) {
+  let html = '';
+  for (const m of metricSeries) {
+    const meta = CMJ_METRIC_META[m.key];
+    const first = m.values[0];
+    const best = Math.max(...m.values);
+    const avg5 = last5Avg(m.values);
+    // Improvement compares the first session on file to the athlete's best —
+    // "how far have they come", not "how are they trending lately".
+    const pct = first > 0 ? ((best - first) / first) * 100 : 0;
+    const pctCls = pct > 0.05 ? 'up' : pct < -0.05 ? 'down' : '';
+    const sign = pct > 0 ? '+' : '';
+    html += `
+      <div class="cmj-hist-section">
+        <div class="cmj-hist-label">${meta.label}</div>
+        <div class="stat-strip" style="margin-bottom:0;">
+          <div class="stat-box">
+            <div class="num">${meta.fmt(first)}</div>
+            <div class="label">First Session</div>
+          </div>
+          <div class="stat-box">
+            <div class="num">${meta.fmt(avg5)}</div>
+            <div class="label">Last 5 Avg</div>
+          </div>
+          <div class="stat-box">
+            <div class="num">${meta.fmt(best)}</div>
+            <div class="label">Best Session</div>
+          </div>
+          <div class="stat-box">
+            <div class="num">${sign}${pct.toFixed(1)}%</div>
+            <div class="label">Improvement</div>
+          </div>
+        </div>
+        <div class="cmj-hist-note">${m.dateRange}</div>
+      </div>`;
+  }
+  return html;
+}
+
 function renderCmjReport() {
   const parsedRows = parseCmjRows(forceData.rows);
   if (!parsedRows.length) {
@@ -1641,6 +1696,18 @@ function renderCmjReport() {
   document.getElementById('cmjNotesBody').innerHTML = buildCmjNotes(metricStates);
   document.getElementById('cmjGlossaryBody').innerHTML = buildCmjGlossary();
   document.getElementById('cmjGlossaryCard').style.display = 'block';
+
+  // Page 2 — full history per metric, across every test day on file (not just
+  // the last 20 shown in the page 1 charts).
+  const dateRange = `${rows.length} test day${rows.length > 1 ? 's' : ''} — ${fmtDateLong(rows[0].date)} to ${fmtDateLong(rows[rows.length - 1].date)}`;
+  const historySeries = [
+    { key: 'jumpHeight', values: jumpAll, dateRange },
+    { key: 'peakPower', values: powerAll, dateRange },
+    { key: 'mrsi', values: mrsiAll, dateRange },
+  ];
+  document.getElementById('cmjHistoryBody').innerHTML = buildCmjHistory(historySeries);
+  document.getElementById('cmjPage2').style.display = 'block';
+  document.getElementById('cmjPage2Subtitle').textContent = `${athleteName} — Session-By-Session Progress`;
 
   document.getElementById('outTeam').textContent = athleteName;
   document.getElementById('outTitle').textContent = document.getElementById('reportTitle').value || 'CMJ Profile Report';
