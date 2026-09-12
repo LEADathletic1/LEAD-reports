@@ -804,6 +804,10 @@
           <input type="date" id="speedEndDate">
         </div>
       </div>
+      <div class="field" id="speedAthleteField" style="display:none;">
+        <label for="speedAthleteSelect">Select Athlete</label>
+        <select id="speedAthleteSelect"></select>
+      </div>
       <div class="hint">Start and end auto-fill from the CSV's first and last test dates — adjust either to filter which tests are included. Each date the athlete tested becomes its own column in this export.</div>
     </div>
 
@@ -1393,12 +1397,38 @@ function getSpeedAthletes(reportType) {
   return rankSpeed(parseSpeedRows(speedData.rows, testName));
 }
 
+function populateSpeedAthleteSelect(names) {
+  const field = document.getElementById('speedAthleteField');
+  const sel = document.getElementById('speedAthleteSelect');
+
+  // Only surface the picker when the export actually holds more than one athlete.
+  if (names.length <= 1) {
+    field.style.display = 'none';
+    sel.innerHTML = '';
+    return null;
+  }
+
+  field.style.display = 'block';
+  const existing = Array.from(sel.options).map(o => o.value).join('|');
+  if (existing !== names.join('|')) {
+    const prev = sel.value;
+    sel.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join('');
+    sel.value = names.includes(prev) ? prev : names[0];
+  }
+  return sel.value;
+}
+
 function renderSpeedReport(reportType) {
   const athletes = getSpeedAthletes(reportType);
   const scope = getReportScope();
   if (scope === 'athlete') {
-    renderSpeedAthleteView(reportType, athletes);
+    // Athlete view gets a picker whenever the file has more than one athlete —
+    // mirrors how Force Data works, alphabetical for scanning. Team view hides it.
+    const names = [...new Set(athletes.map(a => a.Athlete))].sort();
+    const selectedName = populateSpeedAthleteSelect(names);
+    renderSpeedAthleteView(reportType, athletes, selectedName);
   } else {
+    document.getElementById('speedAthleteField').style.display = 'none';
     renderSpeedTeamView(reportType, athletes);
   }
 }
@@ -1488,7 +1518,7 @@ function renderSpeedTeamView(reportType, athletes) {
   cardsWrap.innerHTML = cardsHtml;
 }
 
-function renderSpeedAthleteView(reportType, athletes) {
+function renderSpeedAthleteView(reportType, athletes, selectedName) {
   const label = reportType === 'speed10' ? '10-Yard Acceleration' : '30-Yard Sprint';
   const cardsWrap = document.getElementById('speedCards');
   cardsWrap.style.display = 'flex';
@@ -1502,7 +1532,7 @@ function renderSpeedAthleteView(reportType, athletes) {
     return;
   }
 
-  const athlete = athletes[0];
+  const athlete = athletes.find(a => a.Athlete === selectedName) || athletes[0];
   const delta = athlete.testsCount >= 2 ? athlete.current - athlete.first : null;
   const deltaText = delta === null ? '—' : `${delta > 0 ? '+' : ''}${delta.toFixed(2)}s`;
 
@@ -2403,9 +2433,26 @@ function render() {
     document.getElementById('reportContent').style.display = 'block';
 
     const scope = getReportScope();
+    // Populate the athlete picker up front (athlete scope only) so the name
+    // auto-fill below can follow the current selection on the very first render
+    // of a freshly-dropped file, not one render behind.
+  if (scope === 'athlete') {
+    // Sorted alphabetically for the picker (matches Force Data), so a coach can
+    // scan for a name — distinct from the report's own fastest-first ranking.
+    const names = [...new Set(getSpeedAthletes(currentReportType).map(a => a.Athlete))].sort();
+    populateSpeedAthleteSelect(names);
+  } else {
+    document.getElementById('speedAthleteField').style.display = 'none';
+  }
+
     if (scope === 'athlete' && !teamNameTouched) {
       const athletes = getSpeedAthletes(currentReportType);
-      if (athletes.length) document.getElementById('teamName').value = athletes[0].Athlete;
+      if (athletes.length) {
+        // Follow the athlete picker, not just the fastest athlete.
+        const picked = document.getElementById('speedAthleteSelect').value;
+        const chosen = athletes.find(a => a.Athlete === picked) || athletes[0];
+        document.getElementById('teamName').value = chosen.Athlete;
+      }
     }
 
     const team = document.getElementById('teamName').value || 'Team Name';
@@ -2568,6 +2615,12 @@ document.getElementById('speedTemplateBtn').addEventListener('click', () => {
 
 document.getElementById('forceAthleteSelect').addEventListener('change', () => {
   // Switching athletes should re-fill the name field with the new pick.
+  teamNameTouched = false;
+  render();
+});
+
+document.getElementById('speedAthleteSelect').addEventListener('change', () => {
+  // Same as Force: switching athletes re-fills the name field with the new pick.
   teamNameTouched = false;
   render();
 });
