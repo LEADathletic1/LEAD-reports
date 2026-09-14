@@ -1,0 +1,129 @@
+{
+  "generated": "2026-09-14",
+  "source": "Hawkin Dynamics CMJ export, LEAD Athletic Performance",
+  "methodology": "Standard CMJ trials only (arm-swing and combo segments excluded). Same-day trials reduced to best attempt by Jump Height. Per-athlete value is the average of up to their last 5 test days. Roster stat is the mean/median/SD/min/max of those per-athlete values.",
+  "female": {
+    "n_athletes": 26,
+    "date_range": "2026-07-28 to 2026-09-09",
+    "metrics": {
+      "avg_relative_propulsive_force_pct_bw": {
+        "n": 26,
+        "mean": 198.286,
+        "median": 198.94,
+        "sd": 11.267,
+        "min": 177.939,
+        "max": 219.98
+      },
+      "avg_propulsive_velocity_mps": {
+        "n": 26,
+        "mean": 1.491,
+        "median": 1.493,
+        "sd": 0.108,
+        "min": 1.239,
+        "max": 1.704
+      },
+      "avg_relative_braking_force_pct_bw": {
+        "n": 26,
+        "mean": 199.778,
+        "median": 194.78,
+        "sd": 20.166,
+        "min": 165.986,
+        "max": 250.738
+      },
+      "avg_braking_speed_mps": {
+        "n": 26,
+        "mean": 0.859,
+        "median": 0.871,
+        "sd": 0.099,
+        "min": 0.656,
+        "max": 1.018
+      },
+      "jump_height_in": {
+        "n": 26,
+        "mean": 4.628,
+        "median": 4.584,
+        "sd": 0.765,
+        "min": 2.751,
+        "max": 6.22
+      },
+      "peak_relative_propulsive_power_w_per_kg": {
+        "n": 26,
+        "mean": 45.993,
+        "median": 45.421,
+        "sd": 5.325,
+        "min": 33.007,
+        "max": 57.086
+      },
+      "mrsi": {
+        "n": 26,
+        "mean": 0.458,
+        "median": 0.459,
+        "sd": 0.074,
+        "min": 0.287,
+        "max": 0.583
+      }
+    }
+  },
+  "male": {
+    "n_athletes": 57,
+    "date_range": "2026-07-15 to 2026-09-11",
+    "metrics": {
+      "avg_relative_propulsive_force_pct_bw": {
+        "n": 57,
+        "mean": 210.281,
+        "median": 209.406,
+        "sd": 17.841,
+        "min": 170.263,
+        "max": 261.654
+      },
+      "avg_propulsive_velocity_mps": {
+        "n": 57,
+        "mean": 1.712,
+        "median": 1.722,
+        "sd": 0.164,
+        "min": 1.257,
+        "max": 2.027
+      },
+      "avg_relative_braking_force_pct_bw": {
+        "n": 57,
+        "mean": 208.394,
+        "median": 209.885,
+        "sd": 25.422,
+        "min": 150.63,
+        "max": 282.778
+      },
+      "avg_braking_speed_mps": {
+        "n": 57,
+        "mean": 0.98,
+        "median": 0.976,
+        "sd": 0.114,
+        "min": 0.697,
+        "max": 1.237
+      },
+      "jump_height_in": {
+        "n": 57,
+        "mean": 6.283,
+        "median": 6.519,
+        "sd": 1.256,
+        "min": 2.823,
+        "max": 9.33
+      },
+      "peak_relative_propulsive_power_w_per_kg": {
+        "n": 57,
+        "mean": 56.233,
+        "median": 57.816,
+        "sd": 8.648,
+        "min": 33.035,
+        "max": 78.981
+      },
+      "mrsi": {
+        "n": 57,
+        "mean": 0.579,
+        "median": 0.584,
+        "sd": 0.126,
+        "min": 0.284,
+        "max": 0.874
+      }
+    }
+  }
+}

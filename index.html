@@ -103,7 +103,7 @@
     flex: 1 1 100px;
     display: flex; align-items: center; justify-content: center;
     text-align: center;
-    font-size: 12.5px; font-weight: 600; color: var(--black);
+    font-size: 15px; font-weight: 600; color: var(--black);
     padding: 14px 10px;
     border: 1.5px solid #D3D0C7; border-radius: 8px;
     cursor: pointer; background: #FCFBF9;
@@ -118,7 +118,7 @@
     position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;
   }
   .panel h3 {
-    font-size: 17px;
+    font-size: 20px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
@@ -131,7 +131,7 @@
   .field:last-child { margin-bottom: 0; }
   .field label {
     display: block;
-    font-size: 10.5px;
+    font-size: 13.5px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -377,7 +377,10 @@
   .cmj-col .s-card + .s-card { margin-top: 10px; }
   .cmj-nums-row { display: flex; justify-content: space-between; gap: 6px; }
   .cmj-num-block.right { text-align: right; }
-  .cmj-num { font-weight: 700; font-size: 24px; display: block; line-height: 1.15; }
+  .cmj-num { font-weight: 700; font-size: 24px; line-height: 1.15; }
+  .cmj-num-unit {
+    font-size: 12px; font-weight: 600; color: #A8A8A8; margin-left: 3px;
+  }
   .cmj-num-lbl {
     font-size: 8.3px; font-weight: 600; text-transform: uppercase;
     letter-spacing: 0.4px; color: var(--gray); display: block; margin-top: 1px;
@@ -430,11 +433,61 @@
   }
   .cmj-page-break { height: 26px; }
   @media print { .cmj-page-break { break-before: page; page-break-before: always; height: 0; } }
+  .cmj-fv-grid { display: flex; gap: 14px; margin-bottom: 22px; align-items: flex-start; }
+  .cmj-fv-col { flex: 1; min-width: 0; }
+  .cmj-fv-col .cmj-fv-card { width: 100%; }
+  .cmj-fv-sub {
+    font-size: 10px; font-weight: 600; color: var(--gray); margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .cmj-fv-legend { display: flex; gap: 16px; margin: 8px 0 10px; font-size: 9.5px; color: var(--gray); }
+  .cmj-fv-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+  .cmj-fv-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+    border: 1px solid var(--black); display: inline-block;
+  }
+  .cmj-fv-dash { width: 10px; height: 2.5px; background: var(--gray); display: inline-block; }
+  .cmj-fv-result { font-weight: 700; font-size: 12.5px; margin: 4px 0 6px; color: var(--accent-dark); }
+  .cmj-fv-note { font-size: 11.5px; line-height: 1.55; }
+  .cmj-fv-missing {
+    font-size: 11.5px; color: var(--gray); font-style: italic;
+    padding: 30px 10px; text-align: center;
+  }
   .cmj-hist-section { margin-bottom: 22px; page-break-inside: avoid; }
-  .cmj-hist-label {
+  .cmj-hist-card {
+    border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+    background: #FFFFFF; page-break-inside: avoid;
+  }
+  .cmj-hist-head {
     font-weight: 700; font-size: 14px; letter-spacing: 0.3px;
-    padding-bottom: 6px; margin-bottom: 10px;
+    padding: 10px 14px 9px;
+    background: var(--accent); color: var(--stat-num-color);
     border-bottom: 1.5px solid var(--black);
+  }
+  .cmj-hist-body { display: flex; }
+  .cmj-hist-hero {
+    min-width: 152px;
+    background: var(--black); color: #FFFFFF;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 14px 10px;
+  }
+  .cmj-hist-hero .k { font-weight: 700; font-size: 32px; color: var(--accent); line-height: 1.1; }
+  .cmj-hist-hero .l {
+    font-weight: 600; font-size: 8.5px; letter-spacing: 0.6px;
+    text-transform: uppercase; color: #A8A8A8; margin-top: 4px;
+  }
+  .cmj-hist-support { flex: 1; display: flex; }
+  .cmj-hist-stat {
+    flex: 1; text-align: center; padding: 14px 10px;
+    border-left: 1px solid var(--line);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .cmj-hist-stat .k { font-weight: 700; font-size: 19px; color: var(--black); line-height: 1.1; }
+  .cmj-hist-stat .k.pos { color: #3E7B3F; }
+  .cmj-hist-stat .k.neg { color: #A33A2F; }
+  .cmj-hist-stat .l {
+    font-weight: 600; font-size: 8.3px; letter-spacing: 0.5px;
+    text-transform: uppercase; color: var(--gray); margin-top: 4px;
   }
   .cmj-hist-note { font-size: 9.5px; color: var(--gray); margin-top: 7px; font-style: italic; }
   .cmj-notes-footnote {
@@ -461,9 +514,12 @@
   .page-title, .page-subtitle, table.roster thead th, table.roster tbody td,
   table.roster tbody tr, table.top5 td, .sub, .rank-badge,
   .s-card, .s-card-head, .s-card-current .big, .s-card-current .lbl, .s-card-meta,
-  .cmj-num, .cmj-num-lbl, .cmj-tier-row, .cmj-tier-gap, .cmj-hist-label,
+  .cmj-num, .cmj-num-unit, .cmj-num-lbl, .cmj-tier-row, .cmj-tier-gap,
+  .cmj-hist-card, .cmj-hist-head, .cmj-hist-hero, .cmj-hist-hero .l,
+  .cmj-hist-support, .cmj-hist-stat, .cmj-hist-stat .l,
   .cmj-hist-note, .cmj-notes-card, .cmj-notes-head, .cmj-notes-body,
   .cmj-priority-line, .cmj-notes-footnote, .footnote, .footer-line,
+  .cmj-fv-sub, .cmj-fv-legend, .cmj-fv-result, .cmj-fv-note, .cmj-fv-missing,
   .cmj-preview-note, .date-range-row span, .swatch {
     transition: background-color .45s ease, color .45s ease, border-color .45s ease;
   }
@@ -473,7 +529,7 @@
   @media print {
     * { transition: none !important; }
   }
-  .switch-row { display: flex; align-items: center; gap: 9px; cursor: pointer; }
+  .field label.switch-row { display: flex; align-items: center; gap: 9px; cursor: pointer; }
   .switch { position: relative; display: inline-block; }
   .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
   .switch-track {
@@ -627,10 +683,19 @@
   body.lumin-mode .s-card-delta.down { color: #FF7A6B; }
   body.lumin-mode .s-card-delta.flat { color: #8A8A8A; }
   body.lumin-mode .cmj-num { color: #FFFFFF; }
+  body.lumin-mode .cmj-num-unit { color: #7A7A7A; }
   body.lumin-mode .cmj-num-lbl { color: #7A7A7A; }
   body.lumin-mode .cmj-tier-row { border-top-color: #2a2a2a; }
   body.lumin-mode .cmj-tier-gap { color: #8A8A8A; }
-  body.lumin-mode .cmj-hist-label { color: #FFFFFF; border-bottom-color: var(--accent); }
+  body.lumin-mode .cmj-hist-card { background: #1c1c1c; border-color: #2e2e2e; }
+  body.lumin-mode .cmj-hist-head { background: transparent; color: #FFFFFF; border-bottom-color: var(--accent); }
+  body.lumin-mode .cmj-hist-hero { background: #262626; }
+  body.lumin-mode .cmj-hist-hero .l { color: #7A7A7A; }
+  body.lumin-mode .cmj-hist-stat { border-left-color: #2a2a2a; }
+  body.lumin-mode .cmj-hist-stat .k { color: #FFFFFF; }
+  body.lumin-mode .cmj-hist-stat .k.pos { color: #5FD98A; }
+  body.lumin-mode .cmj-hist-stat .k.neg { color: #FF7A6B; }
+  body.lumin-mode .cmj-hist-stat .l { color: #7A7A7A; }
   body.lumin-mode .cmj-hist-note { color: #7A7A7A; }
 
   /* Notes blocks */
@@ -642,6 +707,10 @@
   body.lumin-mode .cmj-priority-line b { color: #FFFFFF; }
   body.lumin-mode .cmj-notes-footnote { color: #7A7A7A; border-top-color: #2a2a2a; }
   body.lumin-mode .footnote { color: #7A7A7A; }
+  body.lumin-mode .cmj-fv-sub { color: #7A7A7A; }
+  body.lumin-mode .cmj-fv-legend { color: #7A7A7A; }
+  body.lumin-mode .cmj-fv-result { color: var(--accent); }
+  body.lumin-mode .cmj-fv-missing { color: #7A7A7A; }
   body.lumin-mode .footer-line { color: #6A6A6A; border-top-color: #2a2a2a; }
   body.lumin-mode .cmj-preview-note { color: #8A8A8A; }
 
@@ -791,7 +860,7 @@
         </div>
         <div class="dropzone" id="dzSpeed">
           <div class="dz-title">Drop CSV here or click to browse</div>
-          <div class="dz-sub">Lumin Physical Testing Report export — multiple test dates supported</div>
+          <div class="dz-sub">Lumin Physical Testing Report export - multiple test dates supported</div>
           <div class="dz-file" id="dzSpeedFile"></div>
           <input type="file" id="fileSpeed" accept=".csv">
         </div>
@@ -808,7 +877,7 @@
         <label for="speedAthleteSelect">Select Athlete</label>
         <select id="speedAthleteSelect"></select>
       </div>
-      <div class="hint">Start and end auto-fill from the CSV's first and last test dates — adjust either to filter which tests are included. Each date the athlete tested becomes its own column in this export.</div>
+      <div class="hint">Start and end auto-fill from the CSV's first and last test dates - adjust either to filter which tests are included. Each date the athlete tested becomes its own column in this export.</div>
     </div>
 
     <div class="panel" id="speedCompareToPanel" style="display:none;">
@@ -817,12 +886,12 @@
         <label>Chart Scale</label>
         <div class="option-box-row">
           <label class="option-box">
-            <input type="radio" name="speedAxisMode" id="speedAxisTeam" value="team" checked>
-            Team-Shared
+            <input type="radio" name="speedAxisMode" id="speedAxisAuto" value="auto" checked>
+            Auto-Scale
           </label>
           <label class="option-box">
-            <input type="radio" name="speedAxisMode" id="speedAxisAuto" value="auto">
-            Auto-Scale
+            <input type="radio" name="speedAxisMode" id="speedAxisTeam" value="team">
+            Team-Shared
           </label>
         </div>
       </div>
@@ -842,7 +911,7 @@
         </div>
         <div class="dropzone" id="dzForce">
           <div class="dz-title">Drop CSV here or click to browse</div>
-          <div class="dz-sub">Hawkin Dynamics Countermovement Jump export — one row per test</div>
+          <div class="dz-sub">Hawkin Dynamics Countermovement Jump export - one row per test</div>
           <div class="dz-file" id="dzForceFile"></div>
           <input type="file" id="fileForce" accept=".csv">
         </div>
@@ -859,7 +928,7 @@
         <label for="forceAthleteSelect">Select Athlete</label>
         <select id="forceAthleteSelect"></select>
       </div>
-      <div class="hint">Start and end auto-fill from the CSV's first and last test dates — adjust either to filter which tests are included. Same-day jumps: best attempt used.</div>
+      <div class="hint">Start and end auto-fill from the CSV's first and last test dates - adjust either to filter which tests are included. Same-day jumps: best attempt used.</div>
       <div style="height:70px;" id="forceSpacer"></div>
     </div>
 
@@ -869,17 +938,16 @@
         <label>Chart Scale</label>
         <div class="option-box-row">
           <label class="option-box">
-            <input type="radio" name="cmjAxisMode" id="cmjAxisTeam" value="team" checked>
-            Team-Shared
+            <input type="radio" name="cmjAxisMode" id="cmjAxisAuto" value="auto" checked>
+            Auto-Scale
           </label>
           <label class="option-box">
-            <input type="radio" name="cmjAxisMode" id="cmjAxisAuto" value="auto">
-            Auto-Scale
+            <input type="radio" name="cmjAxisMode" id="cmjAxisTeam" value="team">
+            Team-Shared
           </label>
         </div>
       </div>
       <div class="field" id="cmjSexField" style="margin-bottom:0;">
-        <label>Sex</label>
         <div class="option-box-row">
           <label class="option-box">
             <input type="radio" name="cmjCompareSex" id="compareMale" value="male" checked>
@@ -929,7 +997,7 @@
       <div class="action-row">
         <button class="btn" id="printBtn">Save Report PDF</button>
       </div>
-      <div class="hint">The dashboard updates live as you fill in fields and drop files. Use Save Report PDF to save a copy — choose "Save as PDF" as the destination in the print dialog.</div>
+      <div class="hint">The dashboard updates live as you fill in fields and drop files. Use Save Report PDF to save a copy - choose "Save as PDF" as the destination in the print dialog.</div>
     </div>
   </div>
 
@@ -952,7 +1020,7 @@
         </div>
       </div>
       <div class="page-title" id="outTitle">Coach's Report – Session Adherence</div>
-      <div class="page-subtitle" id="outSubtitle">Team Summary — Ranked by Sessions Completed</div>
+      <div class="page-subtitle" id="outSubtitle">Team Summary  //  Ranked by Sessions Completed</div>
 
       <div class="stat-strip" id="statStrip"></div>
 
@@ -966,7 +1034,7 @@
         <div class="cmj-preview-note" id="cmjPreviewNote"></div>
         <div class="cmj-metrics-grid" id="cmjMetricsGrid"></div>
         <div class="cmj-notes-card" id="cmjNotesCard">
-          <div class="cmj-notes-head">Coach's Notes — How To Improve</div>
+          <div class="cmj-notes-head">Coach's Notes  //  How To Improve</div>
           <div class="cmj-notes-body" id="cmjNotesBody"></div>
         </div>
         <div class="cmj-notes-card" id="cmjGlossaryCard" style="display:none; margin-top:14px;">
@@ -980,11 +1048,19 @@
           <div class="page-subtitle" id="cmjPage2Subtitle">Session-By-Session Progress</div>
           <div id="cmjHistoryBody"></div>
         </div>
+
+        <div id="cmjPage3" style="display:none;">
+          <div class="cmj-page-break"></div>
+          <div class="page-title">Athlete Profile Report</div>
+          <div class="page-subtitle" id="cmjPage3Subtitle">The Gas &amp; The Brakes</div>
+          <div id="cmjPage3Body"></div>
+        </div>
       </div>
 
       <div class="cmj-top5-grid" id="cmjTop5Grid" style="display:none;"></div>
 
       <div class="footnote" id="footnote"></div>
+      <div class="footnote" id="cmjMetricFootnote" style="display:none;"></div>
       <div class="footer-line">LEAD ATHLETIC PERFORMANCE &nbsp;•&nbsp; <span id="footTeam">Session Report</span></div>
     </div>
   </div>
@@ -1353,12 +1429,12 @@ function getReportScope() {
 
 function getSpeedAxisMode() {
   const el = document.querySelector('input[name="speedAxisMode"]:checked');
-  return el ? el.value : 'team';
+  return el ? el.value : 'auto';
 }
 
 function getCmjAxisMode() {
   const el = document.querySelector('input[name="cmjAxisMode"]:checked');
-  return el ? el.value : 'team';
+  return el ? el.value : 'auto';
 }
 
 // Minimum y-axis span for Auto-Scale mode, per test. Prevents ordinary
@@ -1444,9 +1520,9 @@ function renderSpeedTeamView(reportType, athletes) {
 
   document.getElementById('statStrip').innerHTML = `
     <div class="stat-box"><div class="num">${testedCount}</div><div class="label">Athletes Tested</div></div>
-    <div class="stat-box"><div class="num">${testedCount ? avgCurrent.toFixed(2) + 's' : '—'}</div><div class="label">Team Avg Current Time</div></div>
-    <div class="stat-box"><div class="num">${fastest ? fastest.current.toFixed(2) + 's' : '—'}</div><div class="label">${fastest ? 'Leader — ' + fastest.Athlete : 'Leader'}</div></div>
-    <div class="stat-box"><div class="num">${improved ? improved.delta.toFixed(2) + 's' : '—'}</div><div class="label">${improved ? 'Most Improved — ' + improved.a.Athlete : 'Most Improved'}</div></div>
+    <div class="stat-box"><div class="num">${testedCount ? avgCurrent.toFixed(2) + 's' : '-'}</div><div class="label">Team Avg Current Time</div></div>
+    <div class="stat-box"><div class="num">${fastest ? fastest.current.toFixed(2) + 's' : '-'}</div><div class="label">${fastest ? 'Leader - ' + fastest.Athlete : 'Leader'}</div></div>
+    <div class="stat-box"><div class="num">${improved ? improved.delta.toFixed(2) + 's' : '-'}</div><div class="label">${improved ? 'Most Improved - ' + improved.a.Athlete : 'Most Improved'}</div></div>
   `;
 
   let html = `<thead><tr>
@@ -1459,7 +1535,7 @@ function renderSpeedTeamView(reportType, athletes) {
   </tr></thead><tbody>`;
   for (const a of athletes) {
     const delta = a.testsCount >= 2 ? a.current - a.first : null;
-    let deltaCell = '<span class="sub">—</span>';
+    let deltaCell = '<span class="sub">-</span>';
     if (delta !== null) {
       const d = speedFormatDelta(delta);
       const clsMap = { up: 'delta-cell up', down: 'delta-cell down', flat: 'delta-cell flat' };
@@ -1478,7 +1554,7 @@ function renderSpeedTeamView(reportType, athletes) {
   document.getElementById('rosterTable').innerHTML = html;
 
   const label = reportType === 'speed10' ? '10-Yard Acceleration' : '30-Yard Sprint';
-  document.getElementById('outSubtitle').textContent = `Team Summary — Ranked by Current ${label} Time (Fastest First)`;
+  document.getElementById('outSubtitle').textContent = `Team Summary  //  Ranked by Current ${label} Time (Fastest First)`;
   document.getElementById('footnote').textContent =
     'Ranked by most recent test time, fastest first. "Change" compares the most recent test to each athlete\'s first test on file; athletes with only one test show no change value.';
 
@@ -1527,14 +1603,14 @@ function renderSpeedAthleteView(reportType, athletes, selectedName) {
     document.getElementById('statStrip').innerHTML = '';
     document.getElementById('rosterTable').innerHTML = '';
     cardsWrap.innerHTML = '';
-    document.getElementById('outSubtitle').textContent = `Individual Athlete Report — ${label}`;
+    document.getElementById('outSubtitle').textContent = `Individual Athlete Report  //  ${label}`;
     document.getElementById('footnote').textContent = 'No test data found for this test type in the uploaded file.';
     return;
   }
 
   const athlete = athletes.find(a => a.Athlete === selectedName) || athletes[0];
   const delta = athlete.testsCount >= 2 ? athlete.current - athlete.first : null;
-  const deltaText = delta === null ? '—' : `${delta > 0 ? '+' : ''}${delta.toFixed(2)}s`;
+  const deltaText = delta === null ? '-' : `${delta > 0 ? '+' : ''}${delta.toFixed(2)}s`;
 
   document.getElementById('statStrip').innerHTML = `
     <div class="stat-box"><div class="num">${athlete.Rank} / ${athletes.length}</div><div class="label">Team Rank</div></div>
@@ -1549,7 +1625,7 @@ function renderSpeedAthleteView(reportType, athletes, selectedName) {
     <th class="num" style="width:30%;">Change vs Prior</th>
   </tr></thead><tbody>`;
   athlete.points.forEach((p, i) => {
-    let changeCell = '<span class="sub">—</span>';
+    let changeCell = '<span class="sub">-</span>';
     if (i > 0) {
       const d = p.value - athlete.points[i - 1].value;
       const fd = speedFormatDelta(d);
@@ -1566,13 +1642,13 @@ function renderSpeedAthleteView(reportType, athletes, selectedName) {
   html += '</tbody>';
   document.getElementById('rosterTable').innerHTML = html;
 
-  document.getElementById('outSubtitle').textContent = `Individual Athlete Report — ${athlete.Athlete} — ${label}`;
+  document.getElementById('outSubtitle').textContent = `Individual Athlete Report  //  ${athlete.Athlete}  //  ${label}`;
   document.getElementById('footnote').textContent =
     `Showing every test on file for ${athlete.Athlete}, oldest to newest. Team rank reflects standing among all ${athletes.length} athletes tested.`;
 
   cardsWrap.innerHTML = `<div class="s-card wide">
       <div class="s-card-head">
-        <span class="name">${athlete.Athlete} — Progress Over Time</span>
+        <span class="name">${athlete.Athlete} - Progress Over Time</span>
         <span class="rank">${athlete.testsCount} test${athlete.testsCount > 1 ? 's' : ''} on file</span>
       </div>
       <div class="s-card-body">${sparklineBig(athlete.points)}</div>
@@ -1630,6 +1706,44 @@ function getCompareSex() {
   return el ? el.value : 'male';
 }
 
+// Team-average reference data for the Page 3 Gas/Brakes charts. This is a
+// maintained snapshot, not a live recalculation off whatever CSV happens to
+// be loaded, so testing two or three athletes on a Tuesday doesn't shift the
+// whole team's quadrant boundaries. STALE DATA WARNING: regenerate this from
+// a fresh Hawkin roster export periodically (suggested: monthly, or whenever
+// a meaningful number of new tests have landed).
+const LEAD_CMJ_NORMS = {
+  generated: '2026-09-14',
+  source: 'Hawkin Dynamics CMJ export, LEAD Athletic Performance',
+  methodology: 'Standard CMJ trials only (arm-swing and combo segments excluded). Same-day trials reduced to best attempt by Jump Height. Per-athlete value is the average of up to their last 5 test days. Roster stat is the mean/median/SD/min/max of those per-athlete values.',
+  female: {
+    n_athletes: 26,
+    date_range: '2026-07-28 to 2026-09-09',
+    metrics: {
+      avg_relative_propulsive_force_pct_bw: { n: 26, mean: 198.286, median: 198.94, sd: 11.267, min: 177.939, max: 219.98 },
+      avg_propulsive_velocity_mps: { n: 26, mean: 1.491, median: 1.493, sd: 0.108, min: 1.239, max: 1.704 },
+      avg_relative_braking_force_pct_bw: { n: 26, mean: 199.778, median: 194.78, sd: 20.166, min: 165.986, max: 250.738 },
+      avg_braking_speed_mps: { n: 26, mean: 0.859, median: 0.871, sd: 0.099, min: 0.656, max: 1.018 },
+      jump_height_in: { n: 26, mean: 4.628, median: 4.584, sd: 0.765, min: 2.751, max: 6.22 },
+      peak_relative_propulsive_power_w_per_kg: { n: 26, mean: 45.993, median: 45.421, sd: 5.325, min: 33.007, max: 57.086 },
+      mrsi: { n: 26, mean: 0.458, median: 0.459, sd: 0.074, min: 0.287, max: 0.583 },
+    },
+  },
+  male: {
+    n_athletes: 57,
+    date_range: '2026-07-15 to 2026-09-11',
+    metrics: {
+      avg_relative_propulsive_force_pct_bw: { n: 57, mean: 210.281, median: 209.406, sd: 17.841, min: 170.263, max: 261.654 },
+      avg_propulsive_velocity_mps: { n: 57, mean: 1.712, median: 1.722, sd: 0.164, min: 1.257, max: 2.027 },
+      avg_relative_braking_force_pct_bw: { n: 57, mean: 208.394, median: 209.885, sd: 25.422, min: 150.63, max: 282.778 },
+      avg_braking_speed_mps: { n: 57, mean: 0.98, median: 0.976, sd: 0.114, min: 0.697, max: 1.237 },
+      jump_height_in: { n: 57, mean: 6.283, median: 6.519, sd: 1.256, min: 2.823, max: 9.33 },
+      peak_relative_propulsive_power_w_per_kg: { n: 57, mean: 56.233, median: 57.816, sd: 8.648, min: 33.035, max: 78.981 },
+      mrsi: { n: 57, mean: 0.579, median: 0.584, sd: 0.126, min: 0.284, max: 0.874 },
+    },
+  },
+};
+
 function cmToInches(cm) {
   return cm / 2.54;
 }
@@ -1664,13 +1778,38 @@ function parseCmjRows(rawRows) {
       name: cleanName(r['Name']),
       date: dt.date,
       sortKey: dt.sortKey,
+      segment: String(r['Segment'] || ''),
       jumpHeight: toNum(r['Jump Height']),
       peakPower: toNum(r['Peak Relative Propulsive Power']),
       mrsi: toNum(r['mRSI']),
+      propForce: toNum(r['Avg. Relative Propulsive Force']),
+      propVelocity: toNum(r['Avg. Propulsive Velocity']),
+      brakeForce: toNum(r['Avg. Relative Braking Force']),
+      brakeVelocity: toNum(r['Avg. Braking Velocity']),
     });
   }
   rows.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
   return rows;
+}
+
+// Page 3 (Gas/Brakes) only wants standard CMJ trials — "Countermovement
+// Jump:1", "Countermovement Jump:2", etc. Arm-swing and combo segments (for
+// example "Countermovement Jump-Arm Swing") use a different movement pattern
+// and would skew the force/velocity relationship if mixed in.
+function isStandardCmjSegment(segment) {
+  return /^Countermovement Jump:\d+$/.test(String(segment || '').trim());
+}
+
+// The four Page 3 fields either all exist in a Hawkin export or none do.
+// Checked against the raw parsed CSV rows (before toNum, which would
+// otherwise mask a genuinely missing column as a silent 0).
+function cmjForceVelocityFieldsPresent(rawRows) {
+  const sample = rawRows && rawRows[0];
+  if (!sample) return { propulsive: false, braking: false };
+  return {
+    propulsive: ('Avg. Relative Propulsive Force' in sample) && ('Avg. Propulsive Velocity' in sample),
+    braking: ('Avg. Relative Braking Force' in sample) && ('Avg. Braking Velocity' in sample),
+  };
 }
 
 // When an athlete has multiple jump attempts logged on the same calendar day,
@@ -1749,13 +1888,14 @@ function cmjMetricChart(points, formatValue, metricKey) {
   return `<svg viewBox="0 0 ${W} ${H}" style="display:block; width:100%; height:auto;">${fill.defs}${fill.area}${tierLines}${maxLbl}${minLbl}${line}${dots}</svg>`;
 }
 
-function cmjMetricSection(label, allValues, points20, formatValue, metricKey) {
+function cmjMetricSection(label, allValues, points20, formatValue, metricKey, unit) {
   const avg5 = last5Avg(allValues);
   const best = Math.max(...allValues);
   const { tier, nextTier, nextThreshold } = classifyCmjTier(avg5, metricKey);
   const gapText = nextTier
     ? `${formatValue(nextThreshold - avg5)} to reach ${CMJ_TIER_DISPLAY[nextTier] || nextTier}`
     : 'Top tier reached';
+  const unitHtml = unit ? `<span class="cmj-num-unit">${unit}</span>` : '';
   return `
     <div class="cmj-col">
       <div class="s-card">
@@ -1763,11 +1903,11 @@ function cmjMetricSection(label, allValues, points20, formatValue, metricKey) {
         <div class="s-card-body">
           <div class="cmj-nums-row">
             <div class="cmj-num-block">
-              <span class="cmj-num">${formatValue(avg5)}</span>
+              <span class="cmj-num">${formatValue(avg5)}</span>${unitHtml}
               <span class="cmj-num-lbl">Last 5 Avg</span>
             </div>
             <div class="cmj-num-block right">
-              <span class="cmj-num" style="color:var(--accent-dark);">${formatValue(best)}</span>
+              <span class="cmj-num" style="color:var(--accent-dark);">${formatValue(best)}</span>${unitHtml}
               <span class="cmj-num-lbl">All-Time Best</span>
             </div>
           </div>
@@ -1913,7 +2053,7 @@ function renderCmjTop5(parsedRows, athleteName) {
     <div class="stat-box"><div class="num">${improvedNames.size}</div><div class="label">Athletes Improved</div></div>
     <div class="stat-box"><div class="num">${totalTests}</div><div class="label">Total Tests</div></div>
   `;
-  document.getElementById('outSubtitle').textContent = 'Team Leaderboard — Top 5 by Metric';
+  document.getElementById('outSubtitle').textContent = 'Team Leaderboard  //  Top 5 by Metric';
   document.getElementById('footnote').textContent =
     'Ranked by each athlete\u2019s most recent test day. Where several jumps were logged on one day, the best attempt is used. "Athletes Improved" counts anyone whose latest test beats their first in at least one metric.';
 }
@@ -1938,9 +2078,9 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
 
   document.getElementById('statStrip').innerHTML = `
     <div class="stat-box"><div class="num">${count}</div><div class="label">Athletes Tested</div></div>
-    <div class="stat-box"><div class="num">${count ? meta.fmt(avgCurrent) : '—'}</div><div class="label">Team Average</div></div>
-    <div class="stat-box"><div class="num">${leader ? meta.fmt(leader.current) : '—'}</div><div class="label">${leader ? 'Leader — ' + leader.Athlete : 'Leader'}</div></div>
-    <div class="stat-box"><div class="num">${showImproved ? improvedFmt.text : '—'}</div><div class="label">${showImproved ? 'Most Improved — ' + improved.a.Athlete : 'Most Improved'}</div></div>
+    <div class="stat-box"><div class="num">${count ? meta.fmt(avgCurrent) : '-'}</div><div class="label">Team Average</div></div>
+    <div class="stat-box"><div class="num">${leader ? meta.fmt(leader.current) : '-'}</div><div class="label">${leader ? 'Leader - ' + leader.Athlete : 'Leader'}</div></div>
+    <div class="stat-box"><div class="num">${showImproved ? improvedFmt.text : '-'}</div><div class="label">${showImproved ? 'Most Improved - ' + improved.a.Athlete : 'Most Improved'}</div></div>
   `;
 
   let html = `<thead><tr>
@@ -1953,7 +2093,7 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
   </tr></thead><tbody>`;
   for (const a of athletes) {
     const delta = a.testsCount >= 2 ? a.current - a.first : null;
-    let deltaCell = '<span class="sub">—</span>';
+    let deltaCell = '<span class="sub">-</span>';
     if (delta !== null) {
       // Higher is better here, so a rise is an improvement.
       const d = cmjFormatDelta(delta, metricKey);
@@ -1971,9 +2111,16 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
   html += '</tbody>';
   document.getElementById('rosterTable').innerHTML = html;
 
-  document.getElementById('outSubtitle').textContent = `Team Summary — Ranked by Current ${meta.label} (Highest First)`;
+  document.getElementById('outSubtitle').textContent = `Team Summary  //  Ranked by Current ${meta.label} (Highest First)`;
   document.getElementById('footnote').textContent =
     'Ranked by most recent test day, highest first. "Change" compares the most recent test to each athlete\u2019s first test on file; athletes with only one test show no change value. Where several jumps were logged on one day, the best attempt is used.';
+
+  const glossary = CMJ_METRIC_GLOSSARY[metricKey];
+  const metricNoteEl = document.getElementById('cmjMetricFootnote');
+  if (glossary) {
+    metricNoteEl.innerHTML = `<b>${glossary.label}:</b> ${glossary.text}`;
+    metricNoteEl.style.display = 'block';
+  }
 
   const cardsWrap = document.getElementById('speedCards');
   cardsWrap.style.display = 'flex';
@@ -2019,7 +2166,7 @@ function renderCmjTeamReport() {
     // which is hidden in Team Report mode, so writing there would be silent.
     document.getElementById('reportContent').style.display = 'none';
     document.getElementById('emptyState').textContent =
-      'No usable rows found in this file — check that it\u2019s a Hawkin Dynamics CMJ export.';
+      'No usable rows found in this file - check that it\u2019s a Hawkin Dynamics CMJ export.';
     document.getElementById('emptyState').style.display = 'block';
     return;
   }
@@ -2047,15 +2194,15 @@ function renderCmjTeamReport() {
 const CMJ_IMPROVEMENT_NOTES = {
   jumpHeight: {
     label: 'Jump Height',
-    foundation: 'Build the strength base first — squats, trap bar deadlifts, and split squats two to three times per week. Everything else on this page is built on top of raw lower-body strength.',
-    developing: 'Keep the strength work, but add jump-specific training: box jumps, broad jumps, and lightly loaded jumps. Stop each set the moment height drops off — quality beats volume here.',
+    foundation: 'Build the strength base first - squats, trap bar deadlifts, and split squats two to three times per week. Everything else on this page is built on top of raw lower-body strength.',
+    developing: 'Keep the strength work, but add jump-specific training: box jumps, broad jumps, and lightly loaded jumps. Stop each set the moment height drops off - quality beats volume here.',
     advanced: 'Hold your strength base and sharpen how fast you apply it with weighted jumps and Olympic lift variations. At this level gains come from timing and technique, not more reps.',
   },
   peakPower: {
     label: 'Peak Power Score',
-    foundation: 'Train moving lighter loads fast — jump squats, medicine ball throws, and short sprints. This score is strength divided by bodyweight, so how fast you move matters more than how much you lift.',
-    developing: 'Pair heavy strength work with explosive work in the same session — heavy first, jumps and throws while still fresh. Because this is a per-pound score, body composition moves it too.',
-    advanced: 'Prioritize high-velocity work and recovery — power falls off fast under fatigue. Track bar speed and end the set when velocity drops below target.',
+    foundation: 'Train moving lighter loads fast - jump squats, medicine ball throws, and short sprints. This score is strength divided by bodyweight, so how fast you move matters more than how much you lift.',
+    developing: 'Pair heavy strength work with explosive work in the same session - heavy first, jumps and throws while still fresh. Because this is a per-pound score, body composition moves it too.',
+    advanced: 'Prioritize high-velocity work and recovery - power falls off fast under fatigue. Track bar speed and end the set when velocity drops below target.',
   },
   mrsi: {
     label: 'Movement Efficiency Score',
@@ -2069,15 +2216,15 @@ const CMJ_IMPROVEMENT_NOTES = {
 const CMJ_METRIC_GLOSSARY = {
   jumpHeight: {
     label: 'Jump Height',
-    text: 'This is the actual test — jump as high as you can, using whatever strategy is natural to you. That number is the goal; the other two metrics decode <em>how</em> you got there.',
+    text: 'The goal you aim for when you actually test, conducted with your hands on your hips to standardize strategy. This is the outcome, not what you train directly; it rises as the other two metrics improve.',
   },
   peakPower: {
     label: 'Peak Relative Propulsive Power (W/kg)',
-    text: 'How much power you produce per pound of bodyweight on the way up. It is why a smaller athlete can out-jump a bigger one, and it carries straight over to sprinting, cutting, and first-step quickness.',
+    text: 'The Power (W) an athlete generates for their size (kg) during push-off. The score is relative to body weight, which levels the field, so smaller athletes aren’t unfairly compared to bigger ones. Gains here show up as better jump height, a quicker first step, and faster acceleration overall.',
   },
   mrsi: {
     label: 'Modified Reactive Strength Index (mRSI)',
-    text: 'Your jump height divided by how long it takes you to launch. It measures how quickly you turn strength into movement — the gap between being strong and being explosive when a play is actually happening.',
+    text: 'Jump height divided by time to takeoff; it’s a measure of how quickly the athlete converts their countermovement into an explosive jump. A higher value means a greater output in less time, reflecting better reactive/elastic qualities: the gap between being strong and being able to express that strength fast.',
   },
 };
 
@@ -2098,18 +2245,30 @@ function cmjPriorityMetric(metricStates) {
     .sort((a, b) => a.relGap - b.relGap)[0];
 }
 
-function buildCmjNotes(metricStates) {
+// `focusInfo` comes from Page 3 (The Gas / The Brakes): { available, gasQuadrant,
+// brakesQuadrant }. When Page 3 could classify at least one chart, its result
+// drives the headline instead of the old single-metric "closest to next tier"
+// pick. Falls back to the old behavior only when Page 3 has no data at all
+// (for example an older CSV export missing the four force/velocity columns),
+// so the headline is never just silently blank.
+function buildCmjNotes(metricStates, focusInfo) {
   const priority = cmjPriorityMetric(metricStates);
   let html = '';
 
-  if (priority) {
-    html += `<div class="cmj-priority-line"><b>Biggest opportunity right now:</b> ${CMJ_IMPROVEMENT_NOTES[priority.key].label} — the closest of the three to reaching ${CMJ_TIER_DISPLAY[priority.nextTier] || priority.nextTier} level.</div>`;
+  if (focusInfo && focusInfo.available) {
+    const focusText = cmjTrainingFocusText(focusInfo.gasQuadrant, focusInfo.brakesQuadrant);
+    html += `<div class="cmj-priority-line"><b>What to focus on when training:</b> ${focusText} See Athlete Profile Report below.</div>`;
+  } else if (priority) {
+    html += `<div class="cmj-priority-line"><b>Biggest opportunity right now:</b> ${CMJ_IMPROVEMENT_NOTES[priority.key].label} - the closest of the three to reaching ${CMJ_TIER_DISPLAY[priority.nextTier] || priority.nextTier} level.</div>`;
   }
 
   for (const m of metricStates) {
     const entry = CMJ_IMPROVEMENT_NOTES[m.key];
     const band = improvementBandFor(m.tier);
-    const flag = priority && priority.key === m.key
+    const belowVarsity = m.tier === 'Recreational' || m.tier === 'JV';
+    const isPriority = (priority && priority.key === m.key)
+      || ((m.key === 'peakPower' || m.key === 'mrsi') && belowVarsity);
+    const flag = isPriority
       ? ' <span class="cmj-priority-tag">PRIORITY</span>'
       : '';
     html += `<div class="metric-note"><b>${entry.label}:</b>${flag} ${entry[band]}</div>`;
@@ -2126,6 +2285,240 @@ function buildCmjGlossary() {
   return rows;
 }
 
+/* ---------------- Page 3: The Gas / The Brakes (force-velocity profile) ---------------- */
+
+const CMJ_GAS_QUADRANT_LABELS = {
+  wellRounded: 'Well-Rounded',
+  forceDominant: 'Force-Dominant',
+  velocityDominant: 'Velocity-Dominant',
+  underdeveloped: 'Underdeveloped',
+};
+const CMJ_BRAKES_QUADRANT_LABELS = {
+  fastForceful: 'Fast and Forceful',
+  slowForceful: 'Slow and Forceful',
+  fastLowForce: 'Fast, Low Force',
+  slowLight: 'Slow and Light',
+};
+
+const CMJ_GAS_NOTES = {
+  wellRounded: 'No single quality is holding the jump back. The athlete is producing solid force and getting it into motion quickly, the engine and the throttle are both working. Programming stays balanced: continue strength-speed work across the spectrum rather than biasing toward one end.',
+  forceDominant: 'The raw output is there, but it is not converting into speed. This is a strong but slow profile: an athlete who can move real weight but whose jump looks heavy. Programming should shift toward the velocity end of the strength-speed continuum: ballistic and speed-strength work, lighter loads moved with intent, contrast pairs where a heavy set is immediately followed by an unloaded jump.',
+  velocityDominant: 'The athlete is quick, but there is a ceiling on how quick they can stay without more raw force underneath it. This profile looks explosive right now but will plateau if the strength base does not catch up. Programming should lean into the hypertrophy-strength continuum: build tissue capacity and maximal strength first.',
+  underdeveloped: 'Neither quality is where it needs to be yet. This is not really a deficiency in the diagnostic sense, it is usually a training-age story: a young or early-stage athlete who has not built a foundation in either direction. This is a GPP block: general strength, general work capacity, movement competency, before specializing.',
+};
+const CMJ_BRAKES_NOTES = {
+  fastForceful: 'The athlete is absorbing the descent hard and fast, loading the tendon-muscle system aggressively and reversing direction with authority. This is the signature of a well-tuned stretch-shortening cycle: minimal energy leak on the way down. Programming can lean into reactive and plyometric work with confidence.',
+  slowForceful: 'The strength to brake hard is there, but the athlete is taking their time doing it: a longer, more controlled descent rather than a sharp catch and reverse. Worth cueing a faster, more aggressive transition at the bottom of the jump before assuming this needs a strength fix.',
+  fastLowForce: 'The athlete is moving through the brake quickly, but without much force behind it: less a controlled catch, more a fast fall. High eccentric velocity without the force to match it can mean the tissue is taking the deceleration passively rather than actively controlling it. Eccentric strength work, tempo lowering, controlled landings, deceleration-specific training, is the priority here.',
+  slowLight: 'Neither strong nor fast through the brake, the athlete is not loading the eccentric phase aggressively at all. A longer, softer brake like this can mean energy is leaking before the concentric drive even starts. Eccentric-emphasis strength work and reactive landing drills are the starting point.',
+};
+
+// Short, headline-length version of each quadrant's programming implication,
+// used only for the Coach's Notes "What to focus on when training" callout.
+// Brakes takes priority over Gas when both flag a genuine focus area, since
+// deceleration quality carries injury-risk relevance the propulsive side
+// doesn't. A quadrant left out of these maps (wellRounded, fastForceful)
+// means "no single fix needed" for that chart.
+const CMJ_TRAINING_FOCUS_BRAKES = {
+  slowForceful: 'a faster, more aggressive transition out of the countermovement',
+  fastLowForce: 'eccentric strength and deceleration training',
+  slowLight: 'eccentric-emphasis strength work and reactive landing drills',
+};
+const CMJ_TRAINING_FOCUS_GAS = {
+  forceDominant: 'velocity-based training: ballistic and speed-strength work',
+  velocityDominant: 'building the strength base underneath their speed',
+  underdeveloped: 'general physical preparation (GPP) before specializing',
+};
+
+function cmjTrainingFocusText(gasQuadrant, brakesQuadrant) {
+  if (brakesQuadrant && CMJ_TRAINING_FOCUS_BRAKES[brakesQuadrant]) {
+    return `Focus on ${CMJ_TRAINING_FOCUS_BRAKES[brakesQuadrant]}.`;
+  }
+  if (gasQuadrant && CMJ_TRAINING_FOCUS_GAS[gasQuadrant]) {
+    return `Focus on ${CMJ_TRAINING_FOCUS_GAS[gasQuadrant]}.`;
+  }
+  return 'No single quality is holding this athlete back right now, so keep the current balanced program going.';
+}
+
+// X = force, Y = velocity. The team-average crosshair divides the four
+// quadrants (matches Hawkin's own quadrant tool), not the geometric center
+// of the axis range.
+function classifyGasQuadrant(force, velocity, meanForce, meanVelocity) {
+  const highForce = force >= meanForce;
+  const highVelocity = velocity >= meanVelocity;
+  if (highForce && highVelocity) return 'wellRounded';
+  if (highForce) return 'forceDominant';
+  if (highVelocity) return 'velocityDominant';
+  return 'underdeveloped';
+}
+
+// X = force, Y = speed (absolute value of the raw, negative braking velocity).
+function classifyBrakesQuadrant(force, speed, meanForce, meanSpeed) {
+  const highForce = force >= meanForce;
+  const highSpeed = speed >= meanSpeed;
+  if (highForce && highSpeed) return 'fastForceful';
+  if (highForce) return 'slowForceful';
+  if (highSpeed) return 'fastLowForce';
+  return 'slowLight';
+}
+
+// 10% padding on each end of the norms file's own min/max, per metric.
+function cmjAxisRange(stat) {
+  const span = stat.max - stat.min;
+  const pad = span * 0.1;
+  return { min: stat.min - pad, max: stat.max + pad };
+}
+
+function buildCmjFvLegend() {
+  return `<div class="cmj-fv-legend">
+    <span class="cmj-fv-legend-item"><span class="cmj-fv-dot"></span> Athlete</span>
+    <span class="cmj-fv-legend-item"><span class="cmj-fv-dash"></span> Team Average</span>
+  </div>`;
+}
+
+// avgX/avgY are null when no team-average reference is available for this
+// athlete's sex — the crosshair and average marker are simply omitted.
+function buildCmjQuadrantChart(opts) {
+  const { athleteX, athleteY, avgX, avgY, xMin, xMax, yMin, yMax, xFmt, yFmt, quadrantLabels } = opts;
+  const W = 320, H = 250, padL = 40, padR = 12, padT = 14, padB = 30;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+  const xFor = (v) => padL + ((v - xMin) / (xMax - xMin)) * plotW;
+  const yFor = (v) => padT + ((yMax - v) / (yMax - yMin)) * plotH;
+
+  const labelStyle = `font-family:'Barlow SC';font-size:8px;fill:var(--gray);text-transform:uppercase;letter-spacing:0.3px;`;
+  const quadLabels = `
+    <text x="${padL + 4}" y="${padT + 10}" style="${labelStyle}">${quadrantLabels.topLeft}</text>
+    <text x="${(padL + plotW - 4).toFixed(1)}" y="${padT + 10}" text-anchor="end" style="${labelStyle}">${quadrantLabels.topRight}</text>
+    <text x="${padL + 4}" y="${(padT + plotH - 6).toFixed(1)}" style="${labelStyle}">${quadrantLabels.bottomLeft}</text>
+    <text x="${(padL + plotW - 4).toFixed(1)}" y="${(padT + plotH - 6).toFixed(1)}" text-anchor="end" style="${labelStyle}">${quadrantLabels.bottomRight}</text>
+  `;
+  const border = `<rect x="${padL}" y="${padT}" width="${plotW.toFixed(1)}" height="${plotH.toFixed(1)}" style="fill:none;stroke:var(--gray);stroke-width:1;opacity:0.4;" />`;
+
+  let crosshair = '';
+  let avgMarker = '';
+  if (avgX !== null && avgY !== null) {
+    const cx = xFor(Math.max(xMin, Math.min(xMax, avgX)));
+    const cy = yFor(Math.max(yMin, Math.min(yMax, avgY)));
+    crosshair = `
+      <line x1="${cx.toFixed(1)}" y1="${padT}" x2="${cx.toFixed(1)}" y2="${(padT + plotH).toFixed(1)}" style="stroke:var(--gray);stroke-width:1;stroke-dasharray:4 3;opacity:0.6;" />
+      <line x1="${padL}" y1="${cy.toFixed(1)}" x2="${(padL + plotW).toFixed(1)}" y2="${cy.toFixed(1)}" style="stroke:var(--gray);stroke-width:1;stroke-dasharray:4 3;opacity:0.6;" />
+    `;
+    avgMarker = `<line x1="${(cx - 6).toFixed(1)}" y1="${cy.toFixed(1)}" x2="${(cx + 6).toFixed(1)}" y2="${cy.toFixed(1)}" style="stroke:var(--gray);stroke-width:2.5;"><title>Team Average: ${xFmt(avgX)}, ${yFmt(avgY)}</title></line>`;
+  }
+
+  const ax = xFor(Math.max(xMin, Math.min(xMax, athleteX)));
+  const ay = yFor(Math.max(yMin, Math.min(yMax, athleteY)));
+  const athleteDot = `<circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="5" style="fill:var(--accent);stroke:var(--black);stroke-width:1;"><title>Athlete: ${xFmt(athleteX)}, ${yFmt(athleteY)}</title></circle>`;
+
+  const axisLabelStyle = `font-family:'Barlow SC';font-size:8px;fill:var(--gray);`;
+  const xAxisLabels = `
+    <text x="${padL}" y="${H - 6}" style="${axisLabelStyle}">${xFmt(xMin)}</text>
+    <text x="${(padL + plotW).toFixed(1)}" y="${H - 6}" text-anchor="end" style="${axisLabelStyle}">${xFmt(xMax)}</text>
+  `;
+  const yAxisLabels = `
+    <text x="2" y="${(padT + 4).toFixed(1)}" style="${axisLabelStyle}">${yFmt(yMax)}</text>
+    <text x="2" y="${(padT + plotH).toFixed(1)}" style="${axisLabelStyle}">${yFmt(yMin)}</text>
+  `;
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="display:block; width:100%; height:auto;">${border}${quadLabels}${crosshair}${avgMarker}${athleteDot}${xAxisLabels}${yAxisLabels}</svg>`;
+}
+
+function buildCmjFvCard(title, innerHtml) {
+  return `<div class="cmj-notes-card cmj-fv-card">
+    <div class="cmj-notes-head">${title}</div>
+    <div class="cmj-notes-body">${innerHtml}</div>
+  </div>`;
+}
+
+// Builds both Page 3 cards and returns the data the Coach's Notes headline
+// needs. `fvRows` are the athlete's daily-condensed, standard-CMJ-only rows
+// (see isStandardCmjSegment) already carrying the four raw fields.
+function buildCmjForceVelocitySection(fvRows, fieldsPresent, sex) {
+  const norms = LEAD_CMJ_NORMS[sex];
+  let html = '<div class="cmj-fv-grid">';
+  let gasQuadrant = null;
+  let brakesQuadrant = null;
+
+  const fmtForce = (v) => `${Math.round(v)}% BW`;
+  const fmtVel = (v) => `${v.toFixed(2)} m/s`;
+
+  // The Gas
+  if (!fieldsPresent.propulsive) {
+    html += `<div class="cmj-fv-col">${buildCmjFvCard('The Gas', '<div class="cmj-fv-missing">Propulsive data not available in this export.</div>')}</div>`;
+  } else {
+    const avgForce = last5Avg(fvRows.map(r => r.propForce));
+    const avgVel = last5Avg(fvRows.map(r => r.propVelocity));
+    let body = `<div class="cmj-fv-sub">Propulsive phase, Avg. Relative Propulsive Force vs. Avg. Propulsive Velocity</div>`;
+    if (norms) {
+      const m = norms.metrics;
+      gasQuadrant = classifyGasQuadrant(avgForce, avgVel, m.avg_relative_propulsive_force_pct_bw.mean, m.avg_propulsive_velocity_mps.mean);
+      const xRange = cmjAxisRange(m.avg_relative_propulsive_force_pct_bw);
+      const yRange = cmjAxisRange(m.avg_propulsive_velocity_mps);
+      body += buildCmjQuadrantChart({
+        athleteX: avgForce, athleteY: avgVel,
+        avgX: m.avg_relative_propulsive_force_pct_bw.mean, avgY: m.avg_propulsive_velocity_mps.mean,
+        xMin: xRange.min, xMax: xRange.max, yMin: yRange.min, yMax: yRange.max,
+        xFmt: fmtForce, yFmt: fmtVel,
+        quadrantLabels: { topLeft: 'Velocity-Dominant', topRight: 'Well-Rounded', bottomLeft: 'Underdeveloped', bottomRight: 'Force-Dominant' },
+      });
+      body += buildCmjFvLegend();
+      body += `<div class="cmj-fv-result">${CMJ_GAS_QUADRANT_LABELS[gasQuadrant]}</div>`;
+      body += `<div class="cmj-fv-note">${CMJ_GAS_NOTES[gasQuadrant]}</div>`;
+    } else {
+      const xRange = { min: avgForce * 0.8, max: avgForce * 1.2 };
+      const yRange = { min: avgVel * 0.8, max: avgVel * 1.2 };
+      body += buildCmjQuadrantChart({
+        athleteX: avgForce, athleteY: avgVel, avgX: null, avgY: null,
+        xMin: xRange.min, xMax: xRange.max, yMin: yRange.min, yMax: yRange.max,
+        xFmt: fmtForce, yFmt: fmtVel,
+        quadrantLabels: { topLeft: 'Velocity-Dominant', topRight: 'Well-Rounded', bottomLeft: 'Underdeveloped', bottomRight: 'Force-Dominant' },
+      });
+      body += `<div class="cmj-fv-missing">Team average not available for this athlete's roster group.</div>`;
+    }
+    html += `<div class="cmj-fv-col">${buildCmjFvCard('The Gas', body)}</div>`;
+  }
+
+  // The Brakes
+  if (!fieldsPresent.braking) {
+    html += `<div class="cmj-fv-col">${buildCmjFvCard('The Brakes', '<div class="cmj-fv-missing">Braking data not available in this export.</div>')}</div>`;
+  } else {
+    const avgForce = last5Avg(fvRows.map(r => r.brakeForce));
+    const avgSpeed = last5Avg(fvRows.map(r => Math.abs(r.brakeVelocity)));
+    let body = `<div class="cmj-fv-sub">Eccentric phase, Avg. Relative Braking Force vs. Avg. Braking Speed</div>`;
+    if (norms) {
+      const m = norms.metrics;
+      brakesQuadrant = classifyBrakesQuadrant(avgForce, avgSpeed, m.avg_relative_braking_force_pct_bw.mean, m.avg_braking_speed_mps.mean);
+      const xRange = cmjAxisRange(m.avg_relative_braking_force_pct_bw);
+      const yRange = cmjAxisRange(m.avg_braking_speed_mps);
+      body += buildCmjQuadrantChart({
+        athleteX: avgForce, athleteY: avgSpeed,
+        avgX: m.avg_relative_braking_force_pct_bw.mean, avgY: m.avg_braking_speed_mps.mean,
+        xMin: xRange.min, xMax: xRange.max, yMin: yRange.min, yMax: yRange.max,
+        xFmt: fmtForce, yFmt: fmtVel,
+        quadrantLabels: { topLeft: 'Fast, Low Force', topRight: 'Fast and Forceful', bottomLeft: 'Slow and Light', bottomRight: 'Slow and Forceful' },
+      });
+      body += buildCmjFvLegend();
+      body += `<div class="cmj-fv-result">${CMJ_BRAKES_QUADRANT_LABELS[brakesQuadrant]}</div>`;
+      body += `<div class="cmj-fv-note">${CMJ_BRAKES_NOTES[brakesQuadrant]}</div>`;
+    } else {
+      const xRange = { min: avgForce * 0.8, max: avgForce * 1.2 };
+      const yRange = { min: avgSpeed * 0.8, max: avgSpeed * 1.2 };
+      body += buildCmjQuadrantChart({
+        athleteX: avgForce, athleteY: avgSpeed, avgX: null, avgY: null,
+        xMin: xRange.min, xMax: xRange.max, yMin: yRange.min, yMax: yRange.max,
+        xFmt: fmtForce, yFmt: fmtVel,
+        quadrantLabels: { topLeft: 'Fast, Low Force', topRight: 'Fast and Forceful', bottomLeft: 'Slow and Light', bottomRight: 'Slow and Forceful' },
+      });
+      body += `<div class="cmj-fv-missing">Team average not available for this athlete's roster group.</div>`;
+    }
+    html += `<div class="cmj-fv-col">${buildCmjFvCard('The Brakes', body)}</div>`;
+  }
+
+  html += '</div>';
+  return { html, gasQuadrant, brakesQuadrant };
+}
+
 function buildCmjHistory(metricSeries) {
   let html = '';
   for (const m of metricSeries) {
@@ -2136,27 +2529,31 @@ function buildCmjHistory(metricSeries) {
     // Improvement compares the first session on file to the athlete's best —
     // "how far have they come", not "how are they trending lately".
     const pct = first > 0 ? ((best - first) / first) * 100 : 0;
-    const pctCls = pct > 0.05 ? 'up' : pct < -0.05 ? 'down' : '';
+    const pctCls = pct > 0.05 ? 'pos' : pct < -0.05 ? 'neg' : '';
     const sign = pct > 0 ? '+' : '';
     html += `
       <div class="cmj-hist-section">
-        <div class="cmj-hist-label">${meta.label}</div>
-        <div class="stat-strip" style="margin-bottom:0;">
-          <div class="stat-box">
-            <div class="num">${meta.fmt(first)}</div>
-            <div class="label">First Session</div>
-          </div>
-          <div class="stat-box">
-            <div class="num">${meta.fmt(avg5)}</div>
-            <div class="label">Last 5 Avg</div>
-          </div>
-          <div class="stat-box">
-            <div class="num">${meta.fmt(best)}</div>
-            <div class="label">Best Session</div>
-          </div>
-          <div class="stat-box">
-            <div class="num">${sign}${pct.toFixed(1)}%</div>
-            <div class="label">Improvement</div>
+        <div class="cmj-hist-card">
+          <div class="cmj-hist-head">${meta.label}</div>
+          <div class="cmj-hist-body">
+            <div class="cmj-hist-hero">
+              <div class="k">${meta.fmt(avg5)}</div>
+              <div class="l">Current - Last 5 Avg</div>
+            </div>
+            <div class="cmj-hist-support">
+              <div class="cmj-hist-stat">
+                <div class="k">${meta.fmt(first)}</div>
+                <div class="l">First Session</div>
+              </div>
+              <div class="cmj-hist-stat">
+                <div class="k">${meta.fmt(best)}</div>
+                <div class="l">Best Session</div>
+              </div>
+              <div class="cmj-hist-stat">
+                <div class="k ${pctCls}">${sign}${pct.toFixed(1)}%</div>
+                <div class="l">Improvement</div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="cmj-hist-note">${m.dateRange}</div>
@@ -2168,7 +2565,7 @@ function buildCmjHistory(metricSeries) {
 function renderCmjReport() {
   const parsedRows = parseCmjRows(forceData.rows);
   if (!parsedRows.length) {
-    document.getElementById('cmjPreviewNote').textContent = 'No usable rows found in this file — check that it\u2019s a Hawkin Dynamics CMJ export.';
+    document.getElementById('cmjPreviewNote').textContent = 'No usable rows found in this file - check that it\u2019s a Hawkin Dynamics CMJ export.';
     document.getElementById('cmjMetricsGrid').innerHTML = '';
     document.getElementById('cmjNotesBody').innerHTML = '';
     document.getElementById('forceAthleteField').style.display = 'none';
@@ -2212,8 +2609,8 @@ function renderCmjReport() {
 
   document.getElementById('cmjMetricsGrid').innerHTML =
     cmjMetricSection('Jump Height', jumpAll, jump20, fmtIn, 'jumpHeight') +
-    cmjMetricSection('Peak Power Score (W/kg)', powerAll, power20, fmtWkg, 'peakPower') +
-    cmjMetricSection('Movement Efficiency Score (mRSI)', mrsiAll, mrsi20, fmtMrsi, 'mrsi');
+    cmjMetricSection('Peak Power Score', powerAll, power20, fmtWkg, 'peakPower', 'W/kg') +
+    cmjMetricSection('Movement Efficiency Score', mrsiAll, mrsi20, fmtMrsi, 'mrsi', 'mRSI');
 
   const metricStates = [
     { key: 'jumpHeight', avg5: last5Avg(jumpAll) },
@@ -2221,13 +2618,32 @@ function renderCmjReport() {
     { key: 'mrsi', avg5: last5Avg(mrsiAll) },
   ].map(m => ({ ...m, ...classifyCmjTier(m.avg5, m.key) }));
 
-  document.getElementById('cmjNotesBody').innerHTML = buildCmjNotes(metricStates);
+  // Page 3 — The Gas / The Brakes force-velocity profile. Uses its own
+  // segment-filtered, daily-condensed row set (standard CMJ trials only,
+  // best attempt per day) rather than `rows` above, since arm-swing and
+  // combo segments would skew the force/velocity relationship if mixed in.
+  const fvFieldsPresent = cmjForceVelocityFieldsPresent(forceData.rows);
+  const standardAthleteRows = athleteRows.filter(r => isStandardCmjSegment(r.segment));
+  const fvRows = condenseToDailyBest(standardAthleteRows);
+  const fvAvailable = (fvFieldsPresent.propulsive || fvFieldsPresent.braking) && fvRows.length > 0;
+  let focusInfo = { available: false, gasQuadrant: null, brakesQuadrant: null };
+  if (fvAvailable) {
+    const fv = buildCmjForceVelocitySection(fvRows, fvFieldsPresent, getCompareSex());
+    document.getElementById('cmjPage3Body').innerHTML = fv.html;
+    document.getElementById('cmjPage3').style.display = 'block';
+    document.getElementById('cmjPage3Subtitle').textContent = `${athleteName}  //  The Gas & The Brakes`;
+    focusInfo = { available: true, gasQuadrant: fv.gasQuadrant, brakesQuadrant: fv.brakesQuadrant };
+  } else {
+    document.getElementById('cmjPage3').style.display = 'none';
+  }
+
+  document.getElementById('cmjNotesBody').innerHTML = buildCmjNotes(metricStates, focusInfo);
   document.getElementById('cmjGlossaryBody').innerHTML = buildCmjGlossary();
   document.getElementById('cmjGlossaryCard').style.display = 'block';
 
   // Page 2 — full history per metric, across every test day on file (not just
   // the last 20 shown in the page 1 charts).
-  const dateRange = `${rows.length} test day${rows.length > 1 ? 's' : ''} — ${fmtDateLong(rows[0].date)} to ${fmtDateLong(rows[rows.length - 1].date)}`;
+  const dateRange = `${rows.length} test day${rows.length > 1 ? 's' : ''} - ${fmtDateLong(rows[0].date)} to ${fmtDateLong(rows[rows.length - 1].date)}`;
   const historySeries = [
     { key: 'jumpHeight', values: jumpAll, dateRange },
     { key: 'peakPower', values: powerAll, dateRange },
@@ -2235,12 +2651,12 @@ function renderCmjReport() {
   ];
   document.getElementById('cmjHistoryBody').innerHTML = buildCmjHistory(historySeries);
   document.getElementById('cmjPage2').style.display = 'block';
-  document.getElementById('cmjPage2Subtitle').textContent = `${athleteName} — Session-By-Session Progress`;
+  document.getElementById('cmjPage2Subtitle').textContent = `${athleteName}  //  Session-By-Session Progress`;
 
   document.getElementById('outTeam').textContent = athleteName;
   document.getElementById('outTitle').textContent = document.getElementById('reportTitle').value || 'CMJ Profile Report';
-  document.getElementById('outSubtitle').textContent = 'Individual Athlete Report — Hawkin Dynamics CMJ';
-  document.getElementById('outMeta').textContent = `${rows.length} test day${rows.length > 1 ? 's' : ''} on file — ${fmtDateLong(rows[0].date)} to ${fmtDateLong(rows[rows.length - 1].date)}`;
+  document.getElementById('outSubtitle').textContent = 'Individual Athlete Report  //  Hawkin Dynamics CMJ';
+  document.getElementById('outMeta').textContent = `${rows.length} test day${rows.length > 1 ? 's' : ''} on file - ${fmtDateLong(rows[0].date)} to ${fmtDateLong(rows[rows.length - 1].date)}`;
   document.getElementById('footTeam').textContent = `${athleteName} CMJ Profile Report`;
   document.getElementById('footnote').textContent = '';
 }
@@ -2296,7 +2712,7 @@ function renderSingle(rows, label) {
   }
   html += '</tbody>';
   document.getElementById('rosterTable').innerHTML = html;
-  document.getElementById('outSubtitle').textContent = `Team Summary — Ranked by Sessions Completed${label ? ' — ' + label : ''}`;
+  document.getElementById('outSubtitle').textContent = `Team Summary  //  Ranked by Sessions Completed${label ? '  //  ' + label : ''}`;
   document.getElementById('footnote').textContent =
     'Rankings based on sessions completed within the reporting window; ties broken by exercise completion, then volume lifted. *Average completion figures include only athletes who completed one or more sessions.';
 }
@@ -2359,8 +2775,8 @@ function renderComparison(rows1, rows2, label1, label2) {
     const p1 = m.p1, p2 = m.p2;
     const p1pct = p1 ? `${p1.CompletedPct.toFixed(0)}%<span class="sub">${p1.Completed}/${p1.Assigned}</span>` : '<span class="sub">No data</span>';
     const p2pct = p2 ? `${p2.CompletedPct.toFixed(0)}%<span class="sub">${p2.Completed}/${p2.Assigned}</span>` : '<span class="sub">No data</span>';
-    let deltaCell = '<span class="sub">—</span>';
-    let deltaVolCell = '<span class="sub">—</span>';
+    let deltaCell = '<span class="sub">-</span>';
+    let deltaVolCell = '<span class="sub">-</span>';
     if (p1 && p2) {
       const d = p2.CompletedPct - p1.CompletedPct;
       const cls = d > 0.5 ? 'up' : d < -0.5 ? 'down' : 'flat';
@@ -2377,14 +2793,14 @@ function renderComparison(rows1, rows2, label1, label2) {
       <td class="num">${p1pct}</td>
       <td class="num">${p2pct}</td>
       <td class="num">${deltaCell}</td>
-      <td class="num">${p1 ? p1.Volume.toLocaleString() : '—'}</td>
-      <td class="num">${p2 ? p2.Volume.toLocaleString() : '—'}</td>
+      <td class="num">${p1 ? p1.Volume.toLocaleString() : '-'}</td>
+      <td class="num">${p2 ? p2.Volume.toLocaleString() : '-'}</td>
       <td class="num">${deltaVolCell}</td>
     </tr>`;
   }
   html += '</tbody>';
   document.getElementById('rosterTable').innerHTML = html;
-  document.getElementById('outSubtitle').textContent = `Before / After Comparison — Ranked by ${label2} Sessions Completed`;
+  document.getElementById('outSubtitle').textContent = `Before / After Comparison  //  Ranked by ${label2} Sessions Completed`;
   document.getElementById('footnote').textContent =
     `Comparing ${label1} to ${label2}. Ranking based on most recent period; athletes missing from a period show "No data" rather than zero. *Average completion figures include only athletes who completed one or more sessions in that period.`;
 }
@@ -2392,6 +2808,7 @@ function renderComparison(rows1, rows2, label1, label2) {
 function render() {
   const cardsWrap = document.getElementById('speedCards');
   const cmjWrap = document.getElementById('cmjReport');
+  document.getElementById('cmjMetricFootnote').style.display = 'none';
 
   if (currentReportType === 'force') {
     if (!forceData) {
@@ -2689,8 +3106,8 @@ const REPORT_LABELS = {
   training_summary: 'Lumin Training Summary',
   force: 'CMJ Profile Report',
   upper_body_power: 'Plyo Push Up Report',
-  speed10: 'Speed Report — 10 Yard Acceleration',
-  speed30: 'Speed Report — 30 Yard Sprint',
+  speed10: 'Speed Report - 10 Yard Acceleration',
+  speed30: 'Speed Report - 30 Yard Sprint',
   agility: 'Agility Report 5-10-5',
 };
 const REPORT_TEST_TYPE = {
@@ -2754,7 +3171,7 @@ function updateReadyState() {
   document.getElementById('controlsWrap').style.display = isReady ? 'grid' : 'none';
   document.getElementById('reportWrap').style.display = isReady ? 'block' : 'none';
   document.getElementById('comingSoonPanel').style.display = isReady ? 'none' : 'block';
-  document.getElementById('comingSoonTitle').textContent = `${REPORT_LABELS[val]} — Coming Soon`;
+  document.getElementById('comingSoonTitle').textContent = `${REPORT_LABELS[val]} - Coming Soon`;
   document.getElementById('comingSoonSubtitle').textContent = REPORT_TEST_TYPE[val] || '';
 
   document.getElementById('rosterDataPanel').style.display = val === 'training_summary' ? 'block' : 'none';
