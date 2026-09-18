@@ -1677,12 +1677,12 @@ const CMJ_TIER_DISPLAY = {
 const CMJ_THRESHOLDS = {
   male: {
     jumpHeight: { JV: 12, Varsity: 16, JuCo: 20, D1: 22, Pro: 24 },
-    peakPower:  { JV: 50, Varsity: 60, JuCo: 67, D1: 70, Pro: 90 },
+    peakPower:  { JV: 45, Varsity: 60, JuCo: 67, D1: 70, Pro: 90 },
     mrsi:       { JV: 0.40, Varsity: 0.50, JuCo: 0.75, D1: 0.85, Pro: 1.10 },
   },
   female: {
     jumpHeight: { JV: 10, Varsity: 12, JuCo: 15, D1: 16, Pro: 18 },
-    peakPower:  { JV: 42, Varsity: 50, JuCo: 57, D1: 60, Pro: 70 },
+    peakPower:  { JV: 40, Varsity: 50, JuCo: 57, D1: 60, Pro: 70 },
     // D1 corrected from 0.75 to 0.70 — 0.75 left 0.70-0.74 unassigned.
     mrsi:       { JV: 0.40, Varsity: 0.47, JuCo: 0.65, D1: 0.70, Pro: 0.90 },
   },
@@ -2925,7 +2925,19 @@ function render() {
 }
 
 /* ---------------- Wiring ---------------- */
-function setupDropzone(dzId, fileInputId, fileLabelId, onLoaded) {
+const CATEGORY_FILE_LABEL_IDS = {
+  force_category: 'dzForceFile',
+  speed_category: 'dzSpeedFile',
+  training_summary: 'dz1file',
+};
+
+// `expectedCategory` is the report category this dropzone normally holds
+// data for. When set, a dropped file whose columns don't match that
+// category (or, within Speed, don't match the currently selected 10/30
+// Yard sub-type) is rerouted to the report type it actually is instead of
+// being parsed as the wrong format. Omit it (as dz2, the Training Summary
+// comparison file, does) to skip detection entirely.
+function setupDropzone(dzId, fileInputId, fileLabelId, onLoaded, expectedCategory) {
   const dz = document.getElementById(dzId);
   const input = document.getElementById(fileInputId);
   dz.addEventListener('click', () => input.click());
@@ -2938,24 +2950,79 @@ function setupDropzone(dzId, fileInputId, fileLabelId, onLoaded) {
   input.addEventListener('change', () => { if (input.files.length) handleFile(input.files[0]); });
 
   function handleFile(file) {
-    document.getElementById(fileLabelId).textContent = file.name;
     parseCsvFile(file, (rows) => {
-      onLoaded({ rows, filename: file.name, autoLabel: guessDateRangeFromFilename(file.name) });
+      const data = { rows, filename: file.name, autoLabel: guessDateRangeFromFilename(file.name) };
+      const detected = expectedCategory ? sniffCsvReportType(rows) : null;
+      const mismatched = detected && (
+        detected.category !== expectedCategory
+        || (detected.category === 'speed_category' && detected.subtype && detected.subtype !== currentReportType)
+      );
+      if (mismatched) {
+        document.getElementById(CATEGORY_FILE_LABEL_IDS[detected.category]).textContent = file.name;
+        switchToDetectedReportType(detected);
+        routeDetectedData(data, detected);
+        return;
+      }
+      document.getElementById(fileLabelId).textContent = file.name;
+      onLoaded(data);
     });
   }
 }
 
-setupDropzone('dz1', 'file1', 'dz1file', (data) => {
+// --- CSV auto-detect: sniffing which report type a dropped file actually
+// is, so a file dropped on the wrong dropzone (wrong category, or wrong
+// Speed sub-type) still lands in the right place instead of silently
+// producing an empty/garbled report. Each export format's columns are
+// distinctive enough that this never needs to guess:
+//   Force (Hawkin CMJ): has "Jump Height" and "Segment"
+//   Speed (Lumin wide export): has "Athlete", "Test", and "Metric"
+//   Training Summary (Lumin session export): has "Athlete" and "Sessions Assigned"
+function sniffCsvReportType(rows) {
+  if (!rows || !rows.length) return null;
+  const keys = Object.keys(rows[0]);
+  const has = (k) => keys.includes(k);
+
+  if (has('Jump Height') && has('Segment')) {
+    return { category: 'force_category', subtype: 'force' };
+  }
+  if (has('Athlete') && has('Test') && has('Metric')) {
+    const tests = new Set(rows.map(r => String(r['Test'] || '').trim().toLowerCase()));
+    let subtype = null;
+    if (tests.has(SPEED_TEST_NAMES.speed10)) subtype = 'speed10';
+    else if (tests.has(SPEED_TEST_NAMES.speed30)) subtype = 'speed30';
+    return { category: 'speed_category', subtype };
+  }
+  if (has('Athlete') && has('Sessions Assigned')) {
+    return { category: 'training_summary', subtype: 'training_summary' };
+  }
+  return null;
+}
+
+// Drives the Report Type dropdown and Test Type radios exactly as if the
+// coach had clicked them, so every other piece of UI wired to those change
+// events (branding label, ready-state, etc.) stays in sync automatically.
+function switchToDetectedReportType(detected) {
+  const categorySelect = document.getElementById('reportCategory');
+  if (categorySelect.value !== detected.category) {
+    categorySelect.value = detected.category;
+    categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (detected.category === 'speed_category' && detected.subtype) {
+    const radio = document.querySelector(`input[name="testType"][value="${detected.subtype}"]`);
+    if (radio && !radio.checked) {
+      radio.checked = true;
+      radio.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+}
+
+function loadTrainingData(data) {
   period1Data = data;
   if (!document.getElementById('p1Label').value) document.getElementById('p1Label').placeholder = data.autoLabel || 'Period 1';
   render();
-});
-setupDropzone('dz2', 'file2', 'dz2file', (data) => {
-  period2Data = data;
-  if (!document.getElementById('p2Label').value) document.getElementById('p2Label').placeholder = data.autoLabel || 'Period 2';
-  render();
-});
-setupDropzone('dzSpeed', 'fileSpeed', 'dzSpeedFile', (data) => {
+}
+
+function loadSpeedData(data) {
   speedData = data;
   const range = scanSpeedDateRange(data.rows);
   document.getElementById('speedStartDate').value = range.minD || '';
@@ -2964,13 +3031,9 @@ setupDropzone('dzSpeed', 'fileSpeed', 'dzSpeedFile', (data) => {
   // the Force dropzone's behavior below; this one was missing it).
   teamNameTouched = false;
   render();
-});
-['speedStartDate', 'speedEndDate'].forEach(id => {
-  document.getElementById(id).addEventListener('change', () => {
-    if (currentReportType === 'speed10' || currentReportType === 'speed30') render();
-  });
-});
-setupDropzone('dzForce', 'fileForce', 'dzForceFile', (data) => {
+}
+
+function loadForceData(data) {
   forceData = data;
   // Clear any prior filter before scanning, so the range reflects the whole
   // new file rather than being constrained by the last file's dates.
@@ -2984,7 +3047,31 @@ setupDropzone('dzForce', 'fileForce', 'dzForceFile', (data) => {
   // A new file means a new roster — let the name auto-fill again.
   teamNameTouched = false;
   render();
+}
+
+function routeDetectedData(data, detected) {
+  if (detected.category === 'force_category') loadForceData(data);
+  else if (detected.category === 'speed_category') loadSpeedData(data);
+  else if (detected.category === 'training_summary') loadTrainingData(data);
+}
+
+// `expectedCategory` lets handleFile (inside setupDropzone) recognize when a
+// dropped file doesn't match the dropzone it landed on — for example a
+// Hawkin CMJ export dropped while Speed Reports is selected — and reroute
+// it to the right report type instead of parsing it as the wrong format.
+setupDropzone('dz1', 'file1', 'dz1file', loadTrainingData, 'training_summary');
+setupDropzone('dz2', 'file2', 'dz2file', (data) => {
+  period2Data = data;
+  if (!document.getElementById('p2Label').value) document.getElementById('p2Label').placeholder = data.autoLabel || 'Period 2';
+  render();
 });
+setupDropzone('dzSpeed', 'fileSpeed', 'dzSpeedFile', loadSpeedData, 'speed_category');
+['speedStartDate', 'speedEndDate'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => {
+    if (currentReportType === 'speed10' || currentReportType === 'speed30') render();
+  });
+});
+setupDropzone('dzForce', 'fileForce', 'dzForceFile', loadForceData, 'force_category');
 ['forceStartDate', 'forceEndDate'].forEach(id => {
   document.getElementById(id).addEventListener('change', () => {
     if (currentReportType === 'force') render();
