@@ -1094,11 +1094,21 @@ let teamNameTouched = false;
 const SPEED_TEST_NAMES = {
   speed10: '10 yard sprint (1 yard build)',
   speed30: '30 yard sprint',
+  agility: '5-10-5 agility test',
 };
+const SPEED_TEST_LABELS = {
+  speed10: '10-Yard Acceleration',
+  speed30: '30-Yard Sprint',
+  agility: '5-10-5 Agility',
+};
+// No normative data yet for Agility, so unlike CMJ it gets no tier/benchmark
+// comparison — same "just the numbers" treatment 10/30 Yard already get.
+const SPEED_REPORT_TYPES = new Set(['speed10', 'speed30', 'agility']);
 const REPORT_TITLES = {
   training_summary: "Coach's Report – Session Adherence",
   speed10: 'Speed Report – 10 Yard Acceleration',
   speed30: 'Speed Report – 30 Yard Sprint',
+  agility: 'Speed Report – 5-10-5 Agility',
   force: 'CMJ Profile Report',
 };
 
@@ -1443,7 +1453,7 @@ function getCmjAxisMode() {
 // a chart is never allowed to zoom in tighter than this window, even if an
 // individual athlete's real spread is smaller. Team-Shared mode has no floor:
 // it shows the real team spread, whatever that happens to be.
-const SPEED_MIN_SPAN = { speed10: 0.20, speed30: 0.35 };
+const SPEED_MIN_SPAN = { speed10: 0.20, speed30: 0.35, agility: 0.25 };
 const CMJ_MIN_SPAN = { jumpHeight: 3.5, peakPower: 12, mrsi: 0.18 };
 
 // Auto-Scale range for one series: the athlete's own min/max, widened
@@ -1553,7 +1563,7 @@ function renderSpeedTeamView(reportType, athletes) {
   html += '</tbody>';
   document.getElementById('rosterTable').innerHTML = html;
 
-  const label = reportType === 'speed10' ? '10-Yard Acceleration' : '30-Yard Sprint';
+  const label = SPEED_TEST_LABELS[reportType];
   document.getElementById('outSubtitle').textContent = `Team Summary  //  Ranked by Current ${label} Time (Fastest First)`;
   document.getElementById('footnote').textContent =
     'Ranked by most recent test time, fastest first. "Change" compares the most recent test to each athlete\'s first test on file; athletes with only one test show no change value.';
@@ -1595,7 +1605,7 @@ function renderSpeedTeamView(reportType, athletes) {
 }
 
 function renderSpeedAthleteView(reportType, athletes, selectedName) {
-  const label = reportType === 'speed10' ? '10-Yard Acceleration' : '30-Yard Sprint';
+  const label = SPEED_TEST_LABELS[reportType];
   const cardsWrap = document.getElementById('speedCards');
   cardsWrap.style.display = 'flex';
 
@@ -2839,7 +2849,7 @@ function render() {
   cmjWrap.style.display = 'none';
   document.getElementById('cmjTop5Grid').style.display = 'none';
 
-  if (currentReportType === 'speed10' || currentReportType === 'speed30') {
+  if (SPEED_REPORT_TYPES.has(currentReportType)) {
     if (!speedData) {
       document.getElementById('emptyState').textContent = 'Drop a Physical Testing Report CSV to generate a report preview.';
       document.getElementById('emptyState').style.display = 'block';
@@ -2986,10 +2996,20 @@ function sniffCsvReportType(rows) {
     return { category: 'force_category', subtype: 'force' };
   }
   if (has('Athlete') && has('Test') && has('Metric')) {
-    const tests = new Set(rows.map(r => String(r['Test'] || '').trim().toLowerCase()));
+    // Lumin's export includes a row for every test type an athlete is
+    // enrolled in, even ones with no data for the selected date range (every
+    // value column blank) — matching on Test name alone would misdetect a
+    // roster's untested test type as the real one. Require an actual value
+    // in at least one date column before counting a test as present.
+    const dateKeys = keys.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k));
+    const hasData = (testName) => rows.some(r => {
+      if (String(r['Test'] || '').trim().toLowerCase() !== testName) return false;
+      return dateKeys.some(k => String(r[k] ?? '').trim() !== '');
+    });
     let subtype = null;
-    if (tests.has(SPEED_TEST_NAMES.speed10)) subtype = 'speed10';
-    else if (tests.has(SPEED_TEST_NAMES.speed30)) subtype = 'speed30';
+    if (hasData(SPEED_TEST_NAMES.speed10)) subtype = 'speed10';
+    else if (hasData(SPEED_TEST_NAMES.speed30)) subtype = 'speed30';
+    else if (hasData(SPEED_TEST_NAMES.agility)) subtype = 'agility';
     return { category: 'speed_category', subtype };
   }
   if (has('Athlete') && has('Sessions Assigned')) {
@@ -3068,7 +3088,7 @@ setupDropzone('dz2', 'file2', 'dz2file', (data) => {
 setupDropzone('dzSpeed', 'fileSpeed', 'dzSpeedFile', loadSpeedData, 'speed_category');
 ['speedStartDate', 'speedEndDate'].forEach(id => {
   document.getElementById(id).addEventListener('change', () => {
-    if (currentReportType === 'speed10' || currentReportType === 'speed30') render();
+    if (SPEED_REPORT_TYPES.has(currentReportType)) render();
   });
 });
 setupDropzone('dzForce', 'fileForce', 'dzForceFile', loadForceData, 'force_category');
@@ -3114,6 +3134,7 @@ document.getElementById('speedTemplateBtn').addEventListener('click', () => {
     ['Athlete', 'Test', '2026-08-01', '2026-08-08'],
     ['EXAMPLE - DELETE THIS ROW', '10 Yard Sprint (1 Yard Build)', '1.52', '1.48'],
     ['EXAMPLE - DELETE THIS ROW', '30 Yard Sprint', '4.25', '4.18'],
+    ['EXAMPLE - DELETE THIS ROW', '5-10-5 Agility Test', '4.65', '4.58'],
   ], 'LEAD_Speed_Data_Template.csv');
 });
 
@@ -3149,7 +3170,7 @@ document.querySelectorAll('input[name="cmjAxisMode"]').forEach(r => {
 
 document.querySelectorAll('input[name="speedAxisMode"]').forEach(r => {
   r.addEventListener('change', () => {
-    if (currentReportType === 'speed10' || currentReportType === 'speed30') render();
+    if (SPEED_REPORT_TYPES.has(currentReportType)) render();
   });
 });
 
@@ -3202,7 +3223,7 @@ const REPORT_TEST_TYPE = {
   upper_body_power: 'Force Plate Plyo Push Up Test',
   agility: '5-10-5 Agility Test',
 };
-const READY_TYPES = new Set(['training_summary', 'speed10', 'speed30']);
+const READY_TYPES = new Set(['training_summary', 'speed10', 'speed30', 'agility']);
 const SCOPE_TYPES = new Set(['force', 'upper_body_power', 'speed10', 'speed30', 'agility']);
 
 const CATEGORY_SUBTYPES = {
@@ -3235,10 +3256,12 @@ const SPEED_SOURCE_INSTRUCTIONS = {
   speed10_team: 'Find This In: Lumin Sports → Reports → Physical Testing → Select Group → Select 10 Yard Sprint → Elapsed Time → Date Range → Export',
   speed30_athlete: 'Find This In: Lumin Sports → Reports → Physical Testing → Select Athlete → Select 30 Yard Sprint → Elapsed Time → Date Range → Export',
   speed30_team: 'Find This In: Lumin Sports → Reports → Physical Testing → Select Group → Select 30 Yard Sprint → Elapsed Time → Date Range → Export',
+  agility_athlete: 'Find This In: Lumin Sports → Reports → Physical Testing → Select Athlete → Select 5-10-5 Agility Test → Agility Time → Date Range → Export',
+  agility_team: 'Find This In: Lumin Sports → Reports → Physical Testing → Select Group → Select 5-10-5 Agility Test → Agility Time → Date Range → Export',
 };
 
 function updateSpeedSourceInstruction() {
-  if (currentReportType !== 'speed10' && currentReportType !== 'speed30') return;
+  if (!SPEED_REPORT_TYPES.has(currentReportType)) return;
   const key = `${currentReportType}_${getReportScope()}`;
   document.getElementById('speedSourceLabel').textContent = SPEED_SOURCE_INSTRUCTIONS[key] || '';
 }
@@ -3263,8 +3286,8 @@ function updateReadyState() {
 
   document.getElementById('rosterDataPanel').style.display = val === 'training_summary' ? 'block' : 'none';
 
-  const speedTeamMode = ((val === 'speed10' || val === 'speed30') && scope === 'team');
-  document.getElementById('speedColumnWrap').style.display = (val === 'speed10' || val === 'speed30') ? 'flex' : 'none';
+  const speedTeamMode = (SPEED_REPORT_TYPES.has(val) && scope === 'team');
+  document.getElementById('speedColumnWrap').style.display = SPEED_REPORT_TYPES.has(val) ? 'flex' : 'none';
   document.getElementById('speedCompareToPanel').style.display = speedTeamMode ? 'block' : 'none';
 
   document.getElementById('forceColumnWrap').style.display = (val === 'force') ? 'flex' : 'none';
