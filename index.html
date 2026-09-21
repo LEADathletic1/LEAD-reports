@@ -322,6 +322,7 @@
   table.roster thead th.num { text-align: right; }
   table.roster tbody td { padding: 7px 9px; border-bottom: 0.75px solid var(--line); }
   table.roster tbody td.num { text-align: right; font-weight: 500; }
+  table.roster tbody td.roster-no-test { color: var(--gray); font-style: italic; }
   table.roster tbody tr:nth-child(even) { background: var(--bg); }
   table.roster tbody tr.top3 td { background: var(--accent-light); }
   .rank-badge {
@@ -512,7 +513,7 @@
   .dropzone, .dz-title, .dz-sub, .option-box, .btn, .template-link,
   .report-wrap, .empty-state, .header, .header-right .team, .header-right .meta,
   .page-title, .page-subtitle, table.roster thead th, table.roster tbody td,
-  table.roster tbody tr, table.top5 td, .sub, .rank-badge,
+  table.roster tbody tr, table.roster tbody td.roster-no-test, table.top5 td, .sub, .rank-badge,
   .s-card, .s-card-head, .s-card-current .big, .s-card-current .lbl, .s-card-meta,
   .cmj-num, .cmj-num-unit, .cmj-num-lbl, .cmj-tier-row, .cmj-tier-gap,
   .cmj-hist-card, .cmj-hist-head, .cmj-hist-hero, .cmj-hist-hero .l,
@@ -661,6 +662,7 @@
   /* Tables */
   body.lumin-mode table.roster thead th { background: #262626; color: #F2F2F2; }
   body.lumin-mode table.roster tbody td { color: #E4E4E4; border-bottom-color: #2a2a2a; }
+  body.lumin-mode table.roster tbody td.roster-no-test { color: #7A7A7A; }
   body.lumin-mode table.roster tbody tr:nth-child(even) { background: #181818; }
   body.lumin-mode table.roster tbody tr.top3 td { background: rgba(1,255,230,0.10); }
   body.lumin-mode table.top5 td { color: #E4E4E4; border-bottom-color: #2a2a2a; }
@@ -1314,6 +1316,34 @@ function parseSpeedRows(rawRows, testName) {
   return out;
 }
 
+// Athletes with a row for this test but no valid time in any date column on
+// file — they're on the roster but didn't test, as opposed to not being
+// enrolled in this test at all. Team Reports list these at the bottom so a
+// coach can see who's missing instead of them silently disappearing.
+function getUntestedSpeedAthletes(rawRows, testName) {
+  const excludeSet = getExcludeSet();
+  const { start, end } = getSpeedDateBounds();
+  const tested = new Set();
+  const seen = new Set();
+  for (const r of rawRows) {
+    const test = String(r['Test'] || '').trim().toLowerCase();
+    if (test !== testName) continue;
+    const name = cleanName(r['Athlete']);
+    if (!name || excludeSet.has(name.toLowerCase())) continue;
+    seen.add(name);
+
+    for (const key of Object.keys(r)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
+      if (start && key < start) continue;
+      if (end && key > end) continue;
+      const raw = r[key];
+      if (raw === undefined || raw === null || String(raw).trim() === '') continue;
+      if (toNum(raw) > 0) { tested.add(name); break; }
+    }
+  }
+  return [...seen].filter(name => !tested.has(name)).sort();
+}
+
 function rankSpeed(athletes) {
   const sorted = [...athletes].sort((a, b) => a.current - b.current || a.best - b.best);
   sorted.forEach((a, i) => a.Rank = i + 1);
@@ -1559,6 +1589,19 @@ function renderSpeedTeamView(reportType, athletes) {
       <td class="num">${a.testsCount}</td>
       <td class="num">${deltaCell}</td>
     </tr>`;
+  }
+  // Untested athletes (on the roster for this test, no valid time on file)
+  // go at the bottom, below every ranked athlete. Agility isn't included
+  // here yet.
+  if (reportType !== 'agility' && speedData) {
+    const untested = getUntestedSpeedAthletes(speedData.rows, SPEED_TEST_NAMES[reportType]);
+    for (const name of untested) {
+      html += `<tr>
+        <td><span class="sub">-</span></td>
+        <td>${name}</td>
+        <td colspan="4" class="roster-no-test">No test on file</td>
+      </tr>`;
+    }
   }
   html += '</tbody>';
   document.getElementById('rosterTable').innerHTML = html;
