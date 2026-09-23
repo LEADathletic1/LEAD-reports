@@ -117,6 +117,13 @@
   .option-box input {
     position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;
   }
+  .panel-toggle-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .panel-toggle-btn.active {
+    border-color: var(--accent); border-width: 2px;
+    background: #D8D8D8;
+    font-weight: 700;
+  }
+  .panel-toggle-dropdown { margin-top: 10px; }
   .panel h3 {
     font-size: 20px;
     font-weight: 700;
@@ -640,6 +647,9 @@
   body.lumin-mode .option-box:has(input:checked) {
     background: #303030; border-color: var(--accent);
   }
+  body.lumin-mode .panel-toggle-btn.active {
+    background: #303030; border-color: var(--accent);
+  }
   body.lumin-mode .switch-track { background: #3f3f3f; }
   body.lumin-mode .template-link { color: var(--accent); }
   body.lumin-mode .template-link:hover { color: #FFFFFF; }
@@ -868,11 +878,20 @@
         </div>
       </div>
       <div class="field">
-        <label>Date Range</label>
-        <div class="date-range-row">
-          <input type="date" id="speedStartDate">
-          <span>to</span>
-          <input type="date" id="speedEndDate">
+        <div class="panel-toggle-row">
+          <button type="button" class="option-box panel-toggle-btn" id="speedDateRangeToggle">Date Range</button>
+          <button type="button" class="option-box panel-toggle-btn" id="speedExcludeToggle" style="display:none;">Exclude Athletes</button>
+        </div>
+        <div class="panel-toggle-dropdown" id="speedDateRangeDropdown" style="display:none;">
+          <div class="date-range-row">
+            <input type="date" id="speedStartDate">
+            <span>to</span>
+            <input type="date" id="speedEndDate">
+          </div>
+        </div>
+        <div class="panel-toggle-dropdown" id="speedExcludeDropdown" style="display:none;">
+          <label for="speedExcludeNames">Exclude Athletes (comma-separated)</label>
+          <textarea id="speedExcludeNames"></textarea>
         </div>
       </div>
       <div class="field" id="speedAthleteField" style="display:none;">
@@ -919,11 +938,20 @@
         </div>
       </div>
       <div class="field">
-        <label>Date Range</label>
-        <div class="date-range-row">
-          <input type="date" id="forceStartDate">
-          <span>to</span>
-          <input type="date" id="forceEndDate">
+        <div class="panel-toggle-row">
+          <button type="button" class="option-box panel-toggle-btn" id="forceDateRangeToggle">Date Range</button>
+          <button type="button" class="option-box panel-toggle-btn" id="forceExcludeToggle" style="display:none;">Exclude Athletes</button>
+        </div>
+        <div class="panel-toggle-dropdown" id="forceDateRangeDropdown" style="display:none;">
+          <div class="date-range-row">
+            <input type="date" id="forceStartDate">
+            <span>to</span>
+            <input type="date" id="forceEndDate">
+          </div>
+        </div>
+        <div class="panel-toggle-dropdown" id="forceExcludeDropdown" style="display:none;">
+          <label for="forceExcludeNames">Exclude Athletes (comma-separated)</label>
+          <textarea id="forceExcludeNames"></textarea>
         </div>
       </div>
       <div class="field" id="forceAthleteField" style="display:none;">
@@ -1126,8 +1154,8 @@ function cleanName(raw) {
   return NAME_OVERRIDES[key] || trimmed;
 }
 
-function getExcludeSet() {
-  const txt = document.getElementById('excludeNames').value || '';
+function getExcludeSet(fieldId) {
+  const txt = document.getElementById(fieldId).value || '';
   const parts = txt.split(/[,\n]/).map(s => s.trim().toLowerCase()).filter(Boolean);
   return new Set(parts);
 }
@@ -1155,7 +1183,7 @@ function parseCsvFile(file, callback) {
 }
 
 function loadRows(rawRows) {
-  const excludeSet = getExcludeSet();
+  const excludeSet = getExcludeSet('excludeNames');
   const rows = [];
   for (const r of rawRows) {
     if (!r['Athlete']) continue;
@@ -1280,7 +1308,7 @@ function scanSpeedDateRange(rawRows) {
 }
 
 function parseSpeedRows(rawRows, testName) {
-  const excludeSet = getExcludeSet();
+  const excludeSet = getExcludeSet('speedExcludeNames');
   const { start, end } = getSpeedDateBounds();
   const out = [];
   for (const r of rawRows) {
@@ -1321,7 +1349,7 @@ function parseSpeedRows(rawRows, testName) {
 // enrolled in this test at all. Team Reports list these at the bottom so a
 // coach can see who's missing instead of them silently disappearing.
 function getUntestedSpeedAthletes(rawRows, testName) {
-  const excludeSet = getExcludeSet();
+  const excludeSet = getExcludeSet('speedExcludeNames');
   const { start, end } = getSpeedDateBounds();
   const tested = new Set();
   const seen = new Set();
@@ -1819,6 +1847,7 @@ function getForceDateBounds() {
 
 function parseCmjRows(rawRows) {
   const { start, end } = getForceDateBounds();
+  const excludeSet = getExcludeSet('forceExcludeNames');
   const rows = [];
   for (const r of rawRows) {
     const excludedFlag = String(r['Excluded'] || '').trim().toLowerCase();
@@ -1827,8 +1856,10 @@ function parseCmjRows(rawRows) {
     if (!dt) continue;
     if (start && dt.date < start) continue;
     if (end && dt.date > end) continue;
+    const name = cleanName(r['Name']);
+    if (!name || excludeSet.has(name.toLowerCase())) continue;
     rows.push({
-      name: cleanName(r['Name']),
+      name,
       date: dt.date,
       sortKey: dt.sortKey,
       segment: String(r['Segment'] || ''),
@@ -3222,7 +3253,7 @@ document.getElementById('comparetoggle').addEventListener('change', (e) => {
   render();
 });
 
-['coachName', 'p1Label', 'p2Label', 'excludeNames'].forEach(id => {
+['coachName', 'p1Label', 'p2Label', 'excludeNames', 'speedExcludeNames', 'forceExcludeNames'].forEach(id => {
   document.getElementById(id).addEventListener('input', render);
 });
 document.getElementById('reportTitle').addEventListener('input', () => { titleTouched = true; render(); });
@@ -3316,6 +3347,48 @@ function isReportReady(type, scope) {
   return false;
 }
 
+// The Date Range / Exclude Athletes toggle pair on the Speed Testing Data
+// and Force Data panels: only one dropdown open at a time, closed by
+// default, clicking the open one's button closes it again.
+function closePanelToggle(prefix) {
+  document.getElementById(`${prefix}DateRangeToggle`).classList.remove('active');
+  document.getElementById(`${prefix}ExcludeToggle`).classList.remove('active');
+  document.getElementById(`${prefix}DateRangeDropdown`).style.display = 'none';
+  document.getElementById(`${prefix}ExcludeDropdown`).style.display = 'none';
+}
+
+function setupPanelToggle(prefix) {
+  const dateBtn = document.getElementById(`${prefix}DateRangeToggle`);
+  const excludeBtn = document.getElementById(`${prefix}ExcludeToggle`);
+  const dateDropdown = document.getElementById(`${prefix}DateRangeDropdown`);
+  const excludeDropdown = document.getElementById(`${prefix}ExcludeDropdown`);
+
+  function toggle(btn, dropdown) {
+    const isOpen = dropdown.style.display === 'block';
+    closePanelToggle(prefix);
+    if (!isOpen) {
+      btn.classList.add('active');
+      dropdown.style.display = 'block';
+    }
+  }
+  dateBtn.addEventListener('click', () => toggle(dateBtn, dateDropdown));
+  excludeBtn.addEventListener('click', () => toggle(excludeBtn, excludeDropdown));
+}
+setupPanelToggle('speed');
+setupPanelToggle('force');
+
+// Hides the Exclude Athletes button outside Team scope. If its dropdown was
+// open when scope switches away from Team, close both dropdowns so nothing
+// is left showing with its trigger button gone.
+function setPanelToggleVisible(prefix, excludeVisible) {
+  const excludeBtn = document.getElementById(`${prefix}ExcludeToggle`);
+  const wasVisible = excludeBtn.style.display !== 'none';
+  excludeBtn.style.display = excludeVisible ? 'block' : 'none';
+  if (!excludeVisible && wasVisible) {
+    closePanelToggle(prefix);
+  }
+}
+
 function updateReadyState() {
   const val = currentReportType;
   const scope = getReportScope();
@@ -3332,9 +3405,11 @@ function updateReadyState() {
   const speedTeamMode = (SPEED_REPORT_TYPES.has(val) && scope === 'team');
   document.getElementById('speedColumnWrap').style.display = SPEED_REPORT_TYPES.has(val) ? 'flex' : 'none';
   document.getElementById('speedCompareToPanel').style.display = speedTeamMode ? 'block' : 'none';
+  setPanelToggleVisible('speed', speedTeamMode);
 
   document.getElementById('forceColumnWrap').style.display = (val === 'force') ? 'flex' : 'none';
   const forceTeamMode = (val === 'force' && scope === 'team');
+  setPanelToggleVisible('force', forceTeamMode);
   document.getElementById('cmjTeamTestPanel').style.display = forceTeamMode ? 'block' : 'none';
   document.getElementById('forceSpacer').style.display = forceTeamMode ? 'none' : 'block';
   // Compare To now hosts two different controls depending on scope — the axis
