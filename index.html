@@ -125,14 +125,14 @@
   }
   .panel-toggle-dropdown { margin-top: 10px; }
   .panel h3 {
-    font-size: 20px;
+    font-size: 40px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
     color: var(--black);
     margin: 0 0 12px 0;
     padding-bottom: 8px;
-    border-bottom: 1.5px solid var(--black);
+    border-bottom: 3px solid var(--black);
   }
   .field { margin-bottom: 12px; }
   .field:last-child { margin-bottom: 0; }
@@ -251,6 +251,17 @@
     border: 1.5px solid var(--black);
   }
   .action-row { display: flex; gap: 10px; margin-top: 4px; }
+  .brand-logo-chip {
+    display: flex; align-items: center; gap: 8px; margin-top: 8px;
+    padding: 6px 10px; border: 1px solid var(--line); border-radius: 5px;
+    background: var(--bg); font-size: 11.5px; color: var(--black);
+  }
+  .brand-logo-chip .filename { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .brand-logo-chip .remove-btn {
+    border: none; background: none; cursor: pointer; font-size: 16px; line-height: 1;
+    color: var(--gray); padding: 2px 4px;
+  }
+  .brand-logo-chip .remove-btn:hover { color: var(--black); }
 
   .hint {
     font-size: 10.5px; color: var(--gray); margin-top: 8px; line-height: 1.4;
@@ -298,7 +309,7 @@
   .page-title { font-weight: 700; font-size: 21px; margin: 4px 0 2px 0; }
   .page-subtitle {
     font-weight: 500; font-size: 11px; color: var(--gray);
-    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 18px;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;
   }
 
   .stat-strip { display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; }
@@ -424,7 +435,7 @@
     background: var(--black); color: white; padding: 9px 14px;
     font-weight: 700; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.5px;
   }
-  .cmj-notes-body { padding: 14px 16px; font-size: 12px; line-height: 1.6; }
+  .cmj-notes-body { padding: 11px 16px; font-size: 12px; line-height: 1.6; }
   .cmj-notes-body .metric-note { margin-bottom: 9px; }
   .cmj-notes-body .metric-note:last-child { margin-bottom: 0; }
   .cmj-notes-body .metric-note b { color: var(--accent-dark); }
@@ -441,14 +452,14 @@
   }
   .cmj-page-break { height: 26px; }
   @media print { .cmj-page-break { break-before: page; page-break-before: always; height: 0; } }
-  .cmj-fv-grid { display: flex; gap: 14px; margin-bottom: 22px; align-items: flex-start; }
+  .cmj-fv-grid { display: flex; gap: 14px; margin-bottom: 14px; align-items: flex-start; }
   .cmj-fv-col { flex: 1; min-width: 0; }
   .cmj-fv-col .cmj-fv-card { width: 100%; }
   .cmj-fv-sub {
-    font-size: 10px; font-weight: 600; color: var(--gray); margin-bottom: 10px;
+    font-size: 10px; font-weight: 600; color: var(--gray); margin-bottom: 7px;
     text-transform: uppercase; letter-spacing: 0.3px;
   }
-  .cmj-fv-legend { display: flex; gap: 16px; margin: 8px 0 10px; font-size: 9.5px; color: var(--gray); }
+  .cmj-fv-legend { display: flex; gap: 16px; margin: 5px 0 7px; font-size: 9.5px; color: var(--gray); }
   .cmj-fv-legend-item { display: inline-flex; align-items: center; gap: 5px; }
   .cmj-fv-dot {
     width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
@@ -461,14 +472,14 @@
     font-size: 11.5px; color: var(--gray); font-style: italic;
     padding: 30px 10px; text-align: center;
   }
-  .cmj-hist-section { margin-bottom: 22px; page-break-inside: avoid; }
+  .cmj-hist-section { margin-bottom: 10px; page-break-inside: avoid; }
   .cmj-hist-card {
     border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
     background: #FFFFFF; page-break-inside: avoid;
   }
   .cmj-hist-head {
-    font-weight: 700; font-size: 14px; letter-spacing: 0.3px;
-    padding: 10px 14px 9px;
+    font-weight: 700; font-size: 13px; letter-spacing: 0.3px;
+    padding: 7px 14px 6px;
     background: var(--accent); color: var(--stat-num-color);
     border-bottom: 1.5px solid var(--black);
   }
@@ -477,33 +488,33 @@
     min-width: 152px;
     background: var(--black); color: #FFFFFF;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; padding: 14px 10px;
+    text-align: center; padding: 9px 10px;
   }
-  .cmj-hist-hero .k { font-weight: 700; font-size: 32px; color: var(--accent); line-height: 1.1; }
+  .cmj-hist-hero .k { font-weight: 700; font-size: 24px; color: var(--accent); line-height: 1.1; }
   .cmj-hist-hero .l {
-    font-weight: 600; font-size: 8.5px; letter-spacing: 0.6px;
-    text-transform: uppercase; color: #A8A8A8; margin-top: 4px;
+    font-weight: 600; font-size: 8px; letter-spacing: 0.6px;
+    text-transform: uppercase; color: #A8A8A8; margin-top: 3px;
   }
   .cmj-hist-support { flex: 1; display: flex; }
   .cmj-hist-stat {
-    flex: 1; text-align: center; padding: 14px 10px;
+    flex: 1; text-align: center; padding: 9px 10px;
     border-left: 1px solid var(--line);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
-  .cmj-hist-stat .k { font-weight: 700; font-size: 19px; color: var(--black); line-height: 1.1; }
+  .cmj-hist-stat .k { font-weight: 700; font-size: 16px; color: var(--black); line-height: 1.1; }
   .cmj-hist-stat .k.pos { color: #3E7B3F; }
   .cmj-hist-stat .k.neg { color: #A33A2F; }
   .cmj-hist-stat .l {
-    font-weight: 600; font-size: 8.3px; letter-spacing: 0.5px;
-    text-transform: uppercase; color: var(--gray); margin-top: 4px;
+    font-weight: 600; font-size: 7.8px; letter-spacing: 0.5px;
+    text-transform: uppercase; color: var(--gray); margin-top: 3px;
   }
-  .cmj-hist-note { font-size: 9.5px; color: var(--gray); margin-top: 7px; font-style: italic; }
+  .cmj-hist-note { font-size: 9px; color: var(--gray); margin-top: 4px; font-style: italic; }
   .cmj-notes-footnote {
     margin-top: 10px; padding-top: 8px; border-top: 0.75px solid var(--line);
     font-size: 9.5px; color: var(--gray); font-style: italic;
   }
   .footer-line {
-    margin-top: 26px; padding-top: 10px; border-top: 0.75px solid var(--line);
+    margin-top: 14px; padding-top: 10px; border-top: 0.75px solid var(--line);
     text-align: center; font-size: 8.5px; color: #9A968A; letter-spacing: 0.4px;
   }
 
@@ -655,6 +666,9 @@
   body.lumin-mode .template-link:hover { color: #FFFFFF; }
   body.lumin-mode .btn { background: var(--accent); color: #0a0a0a; }
   body.lumin-mode .btn.secondary { background: transparent; color: #F2F2F2; border-color: #3f3f3f; }
+  body.lumin-mode .brand-logo-chip { background: #1c1c1c; border-color: #2e2e2e; color: #E4E4E4; }
+  body.lumin-mode .brand-logo-chip .remove-btn { color: #7A7A7A; }
+  body.lumin-mode .brand-logo-chip .remove-btn:hover { color: #FFFFFF; }
   body.lumin-mode .date-range-row span { color: #7A7A7A; }
   body.lumin-mode .swatch { border-color: rgba(255,255,255,0.25); }
 
@@ -992,15 +1006,16 @@
     </div>
     </div>
 
+    <div id="brandingColumnWrap" style="display:flex; flex-direction:column; gap:14px;">
     <div class="panel" id="brandingPanel">
       <h3>Branding</h3>
       <div class="field">
-        <label for="teamName" id="teamNameLabel">Team Name</label>
-        <input type="text" id="teamName" placeholder="e.g. West Park Baseball">
-      </div>
-      <div class="field">
         <label for="reportTitle">Report Title</label>
         <input type="text" id="reportTitle" value="Coach's Report – Session Adherence">
+      </div>
+      <div class="field">
+        <label for="teamName" id="teamNameLabel">Team Name</label>
+        <input type="text" id="teamName" placeholder="e.g. West Park Baseball">
       </div>
       <div class="field">
         <label for="coachName">Coach Name (optional)</label>
@@ -1024,10 +1039,28 @@
           <span class="switch-label">Lumin Mode</span>
         </label>
       </div>
-      <div class="action-row">
-        <button class="btn" id="printBtn">Save Report PDF</button>
+      <div class="field">
+        <label>Brand Logo</label>
+        <input type="file" id="brandLogoInput" accept="image/png,image/jpeg,image/webp" style="display:none;">
+        <div class="action-row">
+          <button type="button" class="btn secondary" id="brandLogoBtn">Upload Brand Logo</button>
+        </div>
+        <div class="brand-logo-chip" id="brandLogoChip" style="display:none;">
+          <span class="filename" id="brandLogoFilename"></span>
+          <button type="button" class="remove-btn" id="brandLogoRemove" aria-label="Remove logo">&times;</button>
+        </div>
+        <div class="hint">Replaces the LEAD Reports Logo with your branding. 400 x 200px ratio suggested.</div>
       </div>
-      <div class="hint">The dashboard updates live as you fill in fields and drop files. Use Save Report PDF to save a copy - choose "Save as PDF" as the destination in the print dialog.</div>
+    </div>
+
+    <div class="panel" id="exportPanel">
+      <h3>Export</h3>
+      <div class="action-row">
+        <button class="btn" id="printBtn">Print Report</button>
+        <button class="btn" id="saveBtn">Save Report</button>
+      </div>
+      <div class="hint">Print Report: choose Save as PDF in the print dialog. Save Report: downloads a PDF copy of this report directly.</div>
+    </div>
     </div>
   </div>
 
@@ -1080,7 +1113,6 @@
         </div>
 
         <div id="cmjPage3" style="display:none;">
-          <div class="cmj-page-break"></div>
           <div class="page-title">Athlete Profile Report</div>
           <div class="page-subtitle" id="cmjPage3Subtitle">The Gas &amp; The Brakes</div>
           <div id="cmjPage3Body"></div>
@@ -1829,11 +1861,33 @@ function cmToInches(cm) {
   return cm / 2.54;
 }
 
-function parseHawkinDateTime(dateStr, timeStr) {
-  // Hawkin exports dates as DD/MM/YYYY (confirmed against real export data).
+// Hawkin's own export date order (DD/MM/YYYY vs MM/DD/YYYY) depends on the
+// exporting account's locale settings, not a fixed convention — confirmed by
+// comparing two real exports where the day fell in different slot positions.
+// Detected once per file: if any date's second slot is > 12 it can only be a
+// day, so the file is month-first; if any date's first slot is > 12 the file
+// is day-first. Falls back to day-first (the originally-documented default)
+// when every date in the file is ambiguous (both slots <= 12).
+function detectHawkinDateFormat(rawRows) {
+  let firstGT12 = false;
+  let secondGT12 = false;
+  for (const r of rawRows) {
+    const parts = String(r['Date'] || '').split('/').map(s => s.trim());
+    if (parts.length !== 3) continue;
+    const a = parseInt(parts[0], 10);
+    const b = parseInt(parts[1], 10);
+    if (a > 12) firstGT12 = true;
+    if (b > 12) secondGT12 = true;
+  }
+  if (secondGT12 && !firstGT12) return 'MDY';
+  return 'DMY';
+}
+
+function parseHawkinDateTime(dateStr, timeStr, format) {
   const parts = String(dateStr || '').split('/').map(s => s.trim());
   if (parts.length !== 3) return null;
-  const [dd, mm, yyyy] = parts;
+  const [a, b, yyyy] = parts;
+  const [dd, mm] = format === 'MDY' ? [b, a] : [a, b];
   const iso = `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
   const t = String(timeStr || '00:00:00').trim();
   return { date: iso, sortKey: `${iso}T${t}` };
@@ -1848,11 +1902,12 @@ function getForceDateBounds() {
 function parseCmjRows(rawRows) {
   const { start, end } = getForceDateBounds();
   const excludeSet = getExcludeSet('forceExcludeNames');
+  const dateFormat = detectHawkinDateFormat(rawRows);
   const rows = [];
   for (const r of rawRows) {
     const excludedFlag = String(r['Excluded'] || '').trim().toLowerCase();
     if (excludedFlag && excludedFlag !== 'false' && excludedFlag !== 'nan') continue;
-    const dt = parseHawkinDateTime(r['Date'], r['Time']);
+    const dt = parseHawkinDateTime(r['Date'], r['Time'], dateFormat);
     if (!dt) continue;
     if (start && dt.date < start) continue;
     if (end && dt.date > end) continue;
@@ -2464,7 +2519,7 @@ function buildCmjFvLegend() {
 // athlete's sex — the crosshair and average marker are simply omitted.
 function buildCmjQuadrantChart(opts) {
   const { athleteX, athleteY, avgX, avgY, xMin, xMax, yMin, yMax, xFmt, yFmt, quadrantLabels } = opts;
-  const W = 320, H = 250, padL = 40, padR = 12, padT = 14, padB = 30;
+  const W = 320, H = 198, padL = 40, padR = 12, padT = 14, padB = 30;
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
   const xFor = (v) => padL + ((v - xMin) / (xMax - xMin)) * plotW;
@@ -3283,6 +3338,219 @@ PRESETS.forEach(preset => {
 });
 
 document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+/* ---------------- Brand Logo (replaces the LEAD logo on the generated report only) ---------------- */
+const BRAND_LOGO_STORAGE_KEY = 'leadReportBuilder.brandLogo';
+const BRAND_LOGO_FILENAME_KEY = 'leadReportBuilder.brandLogoFilename';
+
+// Captured once, before anything can override them, so "remove" has the
+// real original LEAD artwork to revert to rather than a guessed fallback.
+const DEFAULT_LOGO_LIGHT_SRC = document.querySelector('.report-logo-light').src;
+const DEFAULT_LOGO_DARK_SRC = document.querySelector('.report-logo-dark').src;
+
+function applyBrandLogo(dataUrl) {
+  const lightSrc = dataUrl || DEFAULT_LOGO_LIGHT_SRC;
+  const darkSrc = dataUrl || DEFAULT_LOGO_DARK_SRC;
+  document.querySelectorAll('.report-logo-light').forEach(img => { img.src = lightSrc; });
+  document.querySelectorAll('.report-logo-dark').forEach(img => { img.src = darkSrc; });
+}
+
+function setBrandLogoChip(filename) {
+  const chip = document.getElementById('brandLogoChip');
+  const btn = document.getElementById('brandLogoBtn');
+  if (filename) {
+    document.getElementById('brandLogoFilename').textContent = filename;
+    chip.style.display = 'flex';
+    btn.textContent = 'Replace Brand Logo';
+  } else {
+    chip.style.display = 'none';
+    btn.textContent = 'Upload Brand Logo';
+  }
+}
+
+// Canvas downscale to a max width, preserving aspect ratio and transparency
+// (PNG output regardless of source type, so a transparent PNG/WebP logo
+// doesn't get flattened onto a background color).
+function downscaleImageFile(file, maxWidth) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Could not read image file'));
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.naturalWidth);
+        const w = Math.round(img.naturalWidth * scale);
+        const h = Math.round(img.naturalHeight * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadStoredBrandLogo() {
+  try {
+    const dataUrl = localStorage.getItem(BRAND_LOGO_STORAGE_KEY);
+    const filename = localStorage.getItem(BRAND_LOGO_FILENAME_KEY);
+    if (dataUrl) {
+      applyBrandLogo(dataUrl);
+      setBrandLogoChip(filename || 'Custom logo');
+    }
+  } catch (e) {
+    // Storage unavailable (private browsing, quota, etc.) — the report
+    // simply starts back at the default LEAD logo each time.
+  }
+}
+
+document.getElementById('brandLogoBtn').addEventListener('click', () => {
+  document.getElementById('brandLogoInput').click();
+});
+
+document.getElementById('brandLogoInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  let dataUrl;
+  try {
+    dataUrl = await downscaleImageFile(file, 400);
+  } catch (err) {
+    alert('Could not read that image. Try a PNG, JPG, or WebP file.');
+    return;
+  }
+  applyBrandLogo(dataUrl);
+  setBrandLogoChip(file.name);
+  try {
+    localStorage.setItem(BRAND_LOGO_STORAGE_KEY, dataUrl);
+    localStorage.setItem(BRAND_LOGO_FILENAME_KEY, file.name);
+  } catch (err) {
+    // Still applied for this session even though it couldn't be saved.
+  }
+});
+
+document.getElementById('brandLogoRemove').addEventListener('click', () => {
+  applyBrandLogo(null);
+  setBrandLogoChip(null);
+  try {
+    localStorage.removeItem(BRAND_LOGO_STORAGE_KEY);
+    localStorage.removeItem(BRAND_LOGO_FILENAME_KEY);
+  } catch (err) {
+    // Nothing to clean up if storage was never available.
+  }
+});
+
+loadStoredBrandLogo();
+
+/* ---------------- Share Report (in-browser PDF, matching the print layout) ---------------- */
+let html2pdfLoadPromise = null;
+function ensureHtml2Pdf() {
+  if (window.html2pdf) return Promise.resolve();
+  if (html2pdfLoadPromise) return html2pdfLoadPromise;
+  html2pdfLoadPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    s.onload = resolve;
+    s.onerror = () => { html2pdfLoadPromise = null; reject(new Error('Could not load the PDF library')); };
+    document.head.appendChild(s);
+  });
+  return html2pdfLoadPromise;
+}
+
+function sanitizeFilenamePart(s) {
+  return String(s || '').trim().replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+function buildReportFilename() {
+  const team = sanitizeFilenamePart(document.getElementById('teamName').value) || 'Report';
+  const title = sanitizeFilenamePart(document.getElementById('reportTitle').value);
+  return `${team}${title ? '_' + title : ''}.pdf`;
+}
+
+// Mirrors the @media print rules for #report-wrap (see the print stylesheet
+// above) so the in-browser PDF matches the print-dialog layout exactly,
+// rather than capturing the on-screen card styling (border, rounded corners,
+// smaller padding).
+//
+// KNOWN LIMITATION (unresolved): html2canvas (which this PDF path is built
+// on) does not reliably capture this report's inline SVG charts — the
+// sparkline boxes on the metric cards can render blank/distorted in the
+// generated PDF, and in some runs an entire page captured blank, even
+// though everything renders correctly on screen and in the native print
+// dialog. This appeared intermittent across otherwise-identical runs.
+// Three fixes were tried and reverted, each worse than doing nothing:
+//   - foreignObjectRendering: true -> every page rendered fully blank.
+//   - Resolving SVG var()-based fill/stroke to literal colors pre-capture
+//     -> did not fix the charts and did not change the blank-page behavior.
+//   - Waiting on document.fonts.ready / img.decode() before capture
+//     -> hung indefinitely in this test environment.
+// Left as the plain baseline rather than shipping an unproven "fix". See
+// the PDF fidelity write-up delivered with this change for details.
+async function generateReportPdfFile() {
+  await ensureHtml2Pdf();
+  const el = document.getElementById('reportWrap');
+  const breakEls = el.querySelectorAll('.cmj-page-break');
+
+  const prevBorder = el.style.border;
+  const prevRadius = el.style.borderRadius;
+  const prevPadding = el.style.padding;
+  el.style.border = 'none';
+  el.style.borderRadius = '0';
+  el.style.padding = '0.25in 0.5in 0.4in 0.5in';
+  breakEls.forEach(b => { b.style.breakBefore = 'page'; b.style.pageBreakBefore = 'always'; });
+
+  try {
+    const filename = buildReportFilename();
+    const opt = {
+      margin: 0.25,
+      filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+      pagebreak: { mode: ['css'], before: ['.cmj-page-break'] },
+    };
+    const blob = await html2pdf().set(opt).from(el).outputPdf('blob');
+    return new File([blob], filename, { type: 'application/pdf' });
+  } finally {
+    el.style.border = prevBorder;
+    el.style.borderRadius = prevRadius;
+    el.style.padding = prevPadding;
+    breakEls.forEach(b => { b.style.breakBefore = ''; b.style.pageBreakBefore = ''; });
+  }
+}
+
+function downloadFile(file) {
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const saveBtn = document.getElementById('saveBtn');
+
+saveBtn.addEventListener('click', async () => {
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+  try {
+    const file = await generateReportPdfFile();
+    downloadFile(file);
+  } catch (err) {
+    alert('Could not generate the PDF. Please try Print Report instead.');
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save Report';
+  }
+});
 
 const REPORT_LABELS = {
   training_summary: 'Lumin Training Summary',
