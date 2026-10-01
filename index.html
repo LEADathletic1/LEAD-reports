@@ -2278,21 +2278,21 @@ function renderCmjTeamReport() {
 const CMJ_IMPROVEMENT_NOTES = {
   jumpHeight: {
     label: 'Jump Height',
-    foundation: 'Build the strength base first - squats, trap bar deadlifts, and split squats two to three times per week. Everything else on this page is built on top of raw lower-body strength.',
-    developing: 'Keep the strength work, but add jump-specific training: box jumps, broad jumps, and lightly loaded jumps. Stop each set the moment height drops off - quality beats volume here.',
-    advanced: 'Hold your strength base and sharpen how fast you apply it with weighted jumps and Olympic lift variations. At this level gains come from timing and technique, not more reps.',
+    foundation: 'Building the strength base first is what will result in the biggest increase here. Prioritizing full range of motion lower body movements with great technique: squats, trap bar deadlifts, and lunges two to three times per week.',
+    developing: 'Lower body strength is still the priority, but it\'s time to add in some plyos as a contrast pairing: box jumps, broad jumps, and lightly loaded jumps (around 5-10% BW). Consult a coach for plyometric quantity prescriptions.',
+    advanced: 'Maintain your lower body strength work but you can work at shorter ranges, trying to be more explosive. Loaded jumps, box drops, and partial squats or trap bar deadlifts will really move the needle. Let\'s talk about timing and technique, not more reps.',
   },
   peakPower: {
     label: 'Peak Power Score',
-    foundation: 'Train moving lighter loads fast - jump squats, medicine ball throws, and short sprints. This score is strength divided by bodyweight, so how fast you move matters more than how much you lift.',
-    developing: 'Pair heavy strength work with explosive work in the same session - heavy first, jumps and throws while still fresh. Because this is a per-pound score, body composition moves it too.',
-    advanced: 'Prioritize high-velocity work and recovery - power falls off fast under fatigue. Track bar speed and end the set when velocity drops below target.',
+    foundation: 'This score is your power divided by your bodyweight. Your current goal here should be to get strong and stable to be able to transfer power more efficiently within your sequence.',
+    developing: 'Pair heavier strength work with explosive movements in the same session. Strength comes first, then jumps and drops immediately after in a superset. Because this score takes into consideration your weight, body composition plays a part here.',
+    advanced: 'Prioritize high-velocity work and recovery - power falls off fast under fatigue. Track bar speed with a VBT unit, consulting with a coach for speeds, sets, and reps. If your bar velocity is staying above 90%, you know you are working on power.',
   },
   mrsi: {
     label: 'Movement Efficiency Score',
-    foundation: 'Work on a quicker dip-and-drive: same jump, less time getting into it. Fast, shallow countermovement jumps teach the body to stop wasting time on the way down.',
-    developing: 'Compress the transition from down to up without giving up height. Depth drops and accelerated eccentric work sharpen that changeover.',
-    advanced: 'Fine-tune the elastic qualities with high-intensity, low-volume reactive work. At this level the wins come from shortening the countermovement and cleaning up timing.',
+    foundation: 'This is a mix of your height and how long it takes to jump. Working on your jump and mechanics as well as your intent will help here.',
+    developing: 'We want to see you load up more aggressively here for higher outputs. This is "down fast, up high." Depth drops and accelerated eccentric movements will have great carryover.',
+    advanced: 'It\'s time to fine-tune the elastic qualities with high-intensity, low-volume reactive strength work. At this point, let\'s focus on other qualities of your athleticism and make sure you are robust and healthy.',
   },
 };
 
@@ -2300,7 +2300,7 @@ const CMJ_IMPROVEMENT_NOTES = {
 const CMJ_METRIC_GLOSSARY = {
   jumpHeight: {
     label: 'Jump Height',
-    text: 'The goal you aim for when you actually test, conducted with your hands on your hips to standardize strategy. This is the outcome, not what you train directly; it rises as the other two metrics improve.',
+    text: 'The goal you aim for when you actually test, conducted with your hands on your hips to standardize jumping strategy. This is the outcome, not what you train directly; it rises as the other two metrics improve.',
   },
   peakPower: {
     label: 'Peak Relative Propulsive Power (W/kg)',
@@ -2308,7 +2308,7 @@ const CMJ_METRIC_GLOSSARY = {
   },
   mrsi: {
     label: 'Modified Reactive Strength Index (mRSI)',
-    text: 'Jump height divided by time to takeoff; it’s a measure of how quickly the athlete converts their countermovement into an explosive jump. A higher value means a greater output in less time, reflecting better reactive/elastic qualities: the gap between being strong and being able to express that strength fast.',
+    text: 'This ratio is jump height divided by time to takeoff; it’s a measure of how quickly the athlete converts their countermovement into an explosive jump. A higher value means a greater output in less time, reflecting better reactive/elastic qualities: the gap between being strong and being able to express that strength fast.',
   },
 };
 
@@ -2375,26 +2375,26 @@ const CMJ_GAS_QUADRANT_LABELS = {
   wellRounded: 'Well-Rounded',
   forceDominant: 'Force-Dominant',
   velocityDominant: 'Velocity-Dominant',
-  underdeveloped: 'Underdeveloped',
+  underdeveloped: 'Foundational',
 };
 const CMJ_BRAKES_QUADRANT_LABELS = {
   fastForceful: 'Fast and Forceful',
   slowForceful: 'Slow and Forceful',
   fastLowForce: 'Fast, Low Force',
-  slowLight: 'Slow and Light',
+  slowLight: 'Foundational',
 };
 
 const CMJ_GAS_NOTES = {
-  wellRounded: 'No single quality is holding the jump back. The athlete is producing solid force and getting it into motion quickly, the engine and the throttle are both working. Programming stays balanced: continue strength-speed work across the spectrum rather than biasing toward one end.',
-  forceDominant: 'The raw output is there, but it is not converting into speed. This is a strong but slow profile: an athlete who can move real weight but whose jump looks heavy. Programming should shift toward the velocity end of the strength-speed continuum: ballistic and speed-strength work, lighter loads moved with intent, contrast pairs where a heavy set is immediately followed by an unloaded jump.',
-  velocityDominant: 'The athlete is quick, but there is a ceiling on how quick they can stay without more raw force underneath it. This profile looks explosive right now but will plateau if the strength base does not catch up. Programming should lean into the hypertrophy-strength continuum: build tissue capacity and maximal strength first.',
-  underdeveloped: 'Neither quality is where it needs to be yet. This is not really a deficiency in the diagnostic sense, it is usually a training-age story: a young or early-stage athlete who has not built a foundation in either direction. This is a GPP block: general strength, general work capacity, movement competency, before specializing.',
+  wellRounded: 'You\'re producing solid force and getting where you need to, quickly; your force output and velocity are both great. Programming stays balanced: continue strength-speed work across the spectrum rather than biasing either force or velocity.',
+  forceDominant: 'The raw output is there, but we need to be forceful, faster. This is a strong but slow profile: an athlete who is robust but who takes more time to jump. Programming should shift toward a velocity focus for lower body training: think ballistic, powerful movements and speed-strength work, lighter loads moved with intent, and contrast pairs where a heavy set is immediately followed by an unloaded jump.',
+  velocityDominant: 'Your athlete is quick, but there\'s a ceiling on how quick you can stay without more raw force underneath it. This profile looks explosive right now but will plateau if the strength base does not catch up. Programming should lean into the hypertrophy-strength continuum: build tissue (muscle and tendon) capacity, get strong, and you\'ll stay robust and healthy through season.',
+  underdeveloped: 'We want to focus on both areas: getting stronger and getting faster. This is not really a deficiency or "issue", we just need more reps to build a foundation of strength. As that foundation is laid, we\'ll see a natural lean towards one side of the spectrum versus the other. We\'ll focus on basic, full-body strength, general capacity (endurance and conditioning), movement competency (more fluid movement), before specializing.',
 };
 const CMJ_BRAKES_NOTES = {
   fastForceful: 'The athlete is absorbing the descent hard and fast, loading the tendon-muscle system aggressively and reversing direction with authority. This is the signature of a well-tuned stretch-shortening cycle: minimal energy leak on the way down. Programming can lean into reactive and plyometric work with confidence.',
-  slowForceful: 'The strength to brake hard is there, but the athlete is taking their time doing it: a longer, more controlled descent rather than a sharp catch and reverse. Worth cueing a faster, more aggressive transition at the bottom of the jump before assuming this needs a strength fix.',
-  fastLowForce: 'The athlete is moving through the brake quickly, but without much force behind it: less a controlled catch, more a fast fall. High eccentric velocity without the force to match it can mean the tissue is taking the deceleration passively rather than actively controlling it. Eccentric strength work, tempo lowering, controlled landings, deceleration-specific training, is the priority here.',
-  slowLight: 'Neither strong nor fast through the brake, the athlete is not loading the eccentric phase aggressively at all. A longer, softer brake like this can mean energy is leaking before the concentric drive even starts. Eccentric-emphasis strength work and reactive landing drills are the starting point.',
+  slowForceful: 'You hit the brakes with high force, but we want to make that transition quicker. We\'re thinking "down fast, up high." Let\'s focus on loaded drops to the ground; owning strength in that bottom position will go a long way as well.',
+  fastLowForce: 'The athlete is hitting the brakes quickly, but without much force behind it: almost like it\'s rushed. High eccentric movements without the force to match could mean trouble later down the road. Eccentric strength work, like slow tempo squats, controlled box drops, and heavy strength work is the priority here.',
+  slowLight: 'Time to build the brakes. Focusing on controlling weight and owning body positions, you\'ll build the base of strength for high physical demands later down the road. Longer amortization (bottom transition phase) is something we want to shorten. Let\'s start with owning certain "Loaded" body positions to get strong at these ranges and tell the body "I\'m ready for what\'s next." Eccentric-emphasis strength work and reactive landing/balance drills are an excellent starting point.',
 };
 
 // Short, headline-length version of each quadrant's programming implication,
@@ -2404,14 +2404,14 @@ const CMJ_BRAKES_NOTES = {
 // doesn't. A quadrant left out of these maps (wellRounded, fastForceful)
 // means "no single fix needed" for that chart.
 const CMJ_TRAINING_FOCUS_BRAKES = {
-  slowForceful: 'a faster, more aggressive transition out of the countermovement',
-  fastLowForce: 'eccentric strength and deceleration training',
-  slowLight: 'eccentric-emphasis strength work and reactive landing drills',
+  slowForceful: 'a faster, more aggressive load up and out of the countermovement',
+  fastLowForce: 'get strong with eccentric strength and deceleration training',
+  slowLight: 'eccentric-emphasis strength work and controlled landing drills',
 };
 const CMJ_TRAINING_FOCUS_GAS = {
-  forceDominant: 'velocity-based training: ballistic and speed-strength work',
-  velocityDominant: 'building the strength base underneath their speed',
-  underdeveloped: 'general physical preparation (GPP) before specializing',
+  forceDominant: 'reversal strength emphasis: ballistic and explosive work',
+  velocityDominant: 'the speed is there, now let\'s get strong and robust',
+  underdeveloped: 'develop general physical preparation (GPP) before specializing',
 };
 
 function cmjTrainingFocusText(gasQuadrant, brakesQuadrant) {
@@ -2544,7 +2544,7 @@ function buildCmjForceVelocitySection(fvRows, fieldsPresent, sex) {
         avgX: m.avg_relative_propulsive_force_pct_bw.mean, avgY: m.avg_propulsive_velocity_mps.mean,
         xMin: xRange.min, xMax: xRange.max, yMin: yRange.min, yMax: yRange.max,
         xFmt: fmtForce, yFmt: fmtVel,
-        quadrantLabels: { topLeft: 'Velocity-Dominant', topRight: 'Well-Rounded', bottomLeft: 'Underdeveloped', bottomRight: 'Force-Dominant' },
+        quadrantLabels: { topLeft: CMJ_GAS_QUADRANT_LABELS.velocityDominant, topRight: CMJ_GAS_QUADRANT_LABELS.wellRounded, bottomLeft: CMJ_GAS_QUADRANT_LABELS.underdeveloped, bottomRight: CMJ_GAS_QUADRANT_LABELS.forceDominant },
       });
       body += buildCmjFvLegend();
       body += `<div class="cmj-fv-result">${CMJ_GAS_QUADRANT_LABELS[gasQuadrant]}</div>`;
@@ -2556,7 +2556,7 @@ function buildCmjForceVelocitySection(fvRows, fieldsPresent, sex) {
         athleteX: avgForce, athleteY: avgVel, avgX: null, avgY: null,
         xMin: xRange.min, xMax: xRange.max, yMin: yRange.min, yMax: yRange.max,
         xFmt: fmtForce, yFmt: fmtVel,
-        quadrantLabels: { topLeft: 'Velocity-Dominant', topRight: 'Well-Rounded', bottomLeft: 'Underdeveloped', bottomRight: 'Force-Dominant' },
+        quadrantLabels: { topLeft: CMJ_GAS_QUADRANT_LABELS.velocityDominant, topRight: CMJ_GAS_QUADRANT_LABELS.wellRounded, bottomLeft: CMJ_GAS_QUADRANT_LABELS.underdeveloped, bottomRight: CMJ_GAS_QUADRANT_LABELS.forceDominant },
       });
       body += `<div class="cmj-fv-missing">Team average not available for this athlete's roster group.</div>`;
     }
@@ -2580,7 +2580,7 @@ function buildCmjForceVelocitySection(fvRows, fieldsPresent, sex) {
         avgX: m.avg_relative_braking_force_pct_bw.mean, avgY: m.avg_braking_speed_mps.mean,
         xMin: xRange.min, xMax: xRange.max, yMin: yRange.min, yMax: yRange.max,
         xFmt: fmtForce, yFmt: fmtVel,
-        quadrantLabels: { topLeft: 'Fast, Low Force', topRight: 'Fast and Forceful', bottomLeft: 'Slow and Light', bottomRight: 'Slow and Forceful' },
+        quadrantLabels: { topLeft: CMJ_BRAKES_QUADRANT_LABELS.fastLowForce, topRight: CMJ_BRAKES_QUADRANT_LABELS.fastForceful, bottomLeft: CMJ_BRAKES_QUADRANT_LABELS.slowLight, bottomRight: CMJ_BRAKES_QUADRANT_LABELS.slowForceful },
       });
       body += buildCmjFvLegend();
       body += `<div class="cmj-fv-result">${CMJ_BRAKES_QUADRANT_LABELS[brakesQuadrant]}</div>`;
@@ -2592,7 +2592,7 @@ function buildCmjForceVelocitySection(fvRows, fieldsPresent, sex) {
         athleteX: avgForce, athleteY: avgSpeed, avgX: null, avgY: null,
         xMin: xRange.min, xMax: xRange.max, yMin: yRange.min, yMax: yRange.max,
         xFmt: fmtForce, yFmt: fmtVel,
-        quadrantLabels: { topLeft: 'Fast, Low Force', topRight: 'Fast and Forceful', bottomLeft: 'Slow and Light', bottomRight: 'Slow and Forceful' },
+        quadrantLabels: { topLeft: CMJ_BRAKES_QUADRANT_LABELS.fastLowForce, topRight: CMJ_BRAKES_QUADRANT_LABELS.fastForceful, bottomLeft: CMJ_BRAKES_QUADRANT_LABELS.slowLight, bottomRight: CMJ_BRAKES_QUADRANT_LABELS.slowForceful },
       });
       body += `<div class="cmj-fv-missing">Team average not available for this athlete's roster group.</div>`;
     }
