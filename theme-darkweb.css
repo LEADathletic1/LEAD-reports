@@ -213,6 +213,10 @@
   html.theme-darkweb body .btn:disabled:hover {
     box-shadow: none;
   }
+  /* Classic mode: a selected card is already solid white, so no glow on hover */
+  html.theme-darkweb body:not(.lumin-mode) .option-box:has(input:checked):hover {
+    box-shadow: none;
+  }
 
   /* ---- Lumin Mode: cyan titles and underlines, dark buttons, cyan outline when selected.
      Cyan is the app's own Lumin accent (LUMIN_ACCENT in index.html), delivered via --accent. ---- */
