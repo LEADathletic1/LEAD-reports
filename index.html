@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="theme-darkweb">
 <head>
 <meta charset="utf-8">
 <title>LEAD Report Builder</title>
@@ -69,6 +69,12 @@
     margin-bottom: 2px;
     color: #FFFFFF;
   }
+  .header-lumin {
+    display: inline-flex; align-items: center; gap: 9px; cursor: pointer;
+    margin-top: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .header-lumin .switch-label { color: #FFFFFF; }
+  #exportPanel .action-row .btn { flex: 1 1 0; padding: 17.5px 10px; text-align: center; }
   .app-subtitle {
     font-weight: 500;
     font-size: 12.5px;
@@ -170,6 +176,32 @@
     padding: 2px; background: #FCFBF9; cursor: pointer;
   }
   .color-row input[type=text] { flex: 1; }
+  .color-row { position: relative; }
+  .cp-pop {
+    display: none; position: absolute; z-index: 80; top: calc(100% + 6px); left: 0;
+    width: 232px; padding: 12px; background: #FFFFFF;
+    border: 1px solid #D3D0C7; border-radius: 6px;
+  }
+  .cp-pop.open { display: block; }
+  .cp-sv { position: relative; width: 100%; height: 130px; border-radius: 3px; cursor: crosshair; touch-action: none; }
+  .cp-sv-thumb {
+    position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px;
+    border: 2px solid #FFFFFF; border-radius: 50%; box-sizing: border-box;
+    outline: 1px solid rgba(0,0,0,0.55); pointer-events: none;
+  }
+  .cp-hue {
+    display: block; width: 100%; height: 12px; margin: 12px 0 0; padding: 0; border-radius: 6px;
+    -webkit-appearance: none; appearance: none; cursor: pointer;
+    background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  }
+  .cp-hue::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: #FFFFFF; border: 1px solid rgba(0,0,0,0.55);
+  }
+  .cp-hue::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #FFFFFF; border: 1px solid rgba(0,0,0,0.55); }
+  .cp-hex-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .cp-hex-row label { margin-bottom: 0; }
+  .cp-hex-row .cp-hex { text-transform: uppercase; letter-spacing: 0.5px; }
   .swatch-row { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
   .swatch {
     position: relative;
@@ -765,21 +797,6 @@
   }
 </style>
 <link rel="stylesheet" href="theme-darkweb.css">
-<script>
-(function () {
-  var flag = null;
-  try { flag = new URLSearchParams(location.search).get('theme'); } catch (e) {}
-  try {
-    if (flag === 'darkweb') localStorage.setItem('lead_theme', 'darkweb');
-    else if (flag === 'default') localStorage.removeItem('lead_theme');
-  } catch (e) {}
-  var on = flag === 'darkweb';
-  if (flag !== 'darkweb' && flag !== 'default') {
-    try { on = localStorage.getItem('lead_theme') === 'darkweb'; } catch (e) {}
-  }
-  if (on) document.documentElement.classList.add('theme-darkweb');
-})();
-</script>
 </head>
 <body>
 <div id="chargeFlash" aria-hidden="true"></div>
@@ -789,6 +806,14 @@
     <div class="app-header-right">
       <div class="app-title">LEAD Report Builder</div>
       <div class="app-subtitle">Instant coach-ready reports</div>
+      <label class="switch-row header-lumin">
+        <span class="switch">
+          <input type="checkbox" id="luminModeToggle">
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+          <span class="switch-spark" id="switchSpark" aria-hidden="true"></span>
+        </span>
+        <span class="switch-label">Lumin Mode</span>
+      </label>
     </div>
   </div>
 
@@ -1068,23 +1093,13 @@
         <label for="coachName">Coach Name (optional)</label>
         <input type="text" id="coachName" placeholder="e.g. Coach Smith">
       </div>
-      <div class="field">
+      <div class="field" style="margin-bottom:22px;">
         <label for="accentHex">Accent Color</label>
         <div class="color-row">
           <input type="color" id="accentPicker" value="#B8933D">
           <input type="text" id="accentHex" value="#B8933D">
         </div>
         <div class="swatch-row" id="presetSwatches"></div>
-      </div>
-      <div class="field" style="margin-bottom:22px;">
-        <label class="switch-row">
-          <span class="switch">
-            <input type="checkbox" id="luminModeToggle">
-            <span class="switch-track"><span class="switch-thumb"></span></span>
-            <span class="switch-spark" id="switchSpark" aria-hidden="true"></span>
-          </span>
-          <span class="switch-label">Lumin Mode</span>
-        </label>
       </div>
       <div class="field">
         <label>Brand Logo</label>
@@ -3364,6 +3379,110 @@ accentPicker.addEventListener('input', () => {
   accentHex.value = accentPicker.value;
   applyAccent(accentPicker.value);
 });
+
+/* Custom accent color picker: opens with the Hex field first (the browser's own
+   picker can't be told which format to open in). It drives the same hidden
+   color input, so the accent logic above is unchanged. */
+(function () {
+  const row = accentPicker.parentElement;
+  const pop = document.createElement('div');
+  pop.className = 'cp-pop';
+  pop.setAttribute('role', 'dialog');
+  pop.setAttribute('aria-label', 'Accent color picker');
+  pop.innerHTML =
+    '<div class="cp-sv"><div class="cp-sv-thumb"></div></div>' +
+    '<input type="range" class="cp-hue" min="0" max="360" step="1" aria-label="Hue">' +
+    '<div class="cp-hex-row"><label for="cpHex">Hex</label>' +
+    '<input type="text" class="cp-hex" id="cpHex" maxlength="7" spellcheck="false" autocomplete="off"></div>';
+  row.appendChild(pop);
+  const sv = pop.querySelector('.cp-sv');
+  const thumb = pop.querySelector('.cp-sv-thumb');
+  const hue = pop.querySelector('.cp-hue');
+  const hexField = pop.querySelector('.cp-hex');
+  let h = 0, sat = 0, val = 0, queued = false;
+
+  function hexToHsv(hex) {
+    const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    let hh = 0;
+    if (d) {
+      if (max === r) hh = ((g - b) / d) % 6; else if (max === g) hh = (b - r) / d + 2; else hh = (r - g) / d + 4;
+      hh *= 60; if (hh < 0) hh += 360;
+    }
+    return { h: hh, s: max ? d / max : 0, v: max };
+  }
+  function hsvToHex(hh, ss, vv) {
+    const f = n => { const k = (n + hh / 60) % 6; return vv - vv * ss * Math.max(0, Math.min(k, 4 - k, 1)); };
+    const to = x => Math.round(x * 255).toString(16).padStart(2, '0');
+    return ('#' + to(f(5)) + to(f(3)) + to(f(1))).toUpperCase();
+  }
+  function paint() {
+    sv.style.background = 'linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, hsl(' + h + ', 100%, 50%))';
+    thumb.style.left = (sat * 100) + '%';
+    thumb.style.top = ((1 - val) * 100) + '%';
+    hue.value = Math.round(h);
+  }
+  function commit() {
+    const hex = hsvToHex(h, sat, val);
+    hexField.value = hex;
+    accentPicker.value = hex;
+    accentPicker.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  function commitSoon() {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => { queued = false; commit(); });
+  }
+  function load(hex) {
+    const c = hexToHsv(hex);
+    h = c.h; sat = c.s; val = c.v;
+    hexField.value = hex.toUpperCase();
+    paint();
+  }
+  function openPop() {
+    load(accentPicker.value);
+    pop.classList.add('open');
+    hexField.focus();
+    hexField.select();
+  }
+  function closePop(refocus) {
+    if (!pop.classList.contains('open')) return;
+    pop.classList.remove('open');
+    if (refocus) accentPicker.focus();
+  }
+
+  accentPicker.addEventListener('click', e => {
+    e.preventDefault();
+    if (pop.classList.contains('open')) closePop(false); else openPop();
+  });
+
+  function fromPointer(e) {
+    const r = sv.getBoundingClientRect();
+    sat = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    val = 1 - Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    paint();
+    commitSoon();
+  }
+  sv.addEventListener('pointerdown', e => { sv.setPointerCapture(e.pointerId); fromPointer(e); });
+  sv.addEventListener('pointermove', e => { if (sv.hasPointerCapture(e.pointerId)) fromPointer(e); });
+  hue.addEventListener('input', () => { h = Number(hue.value); paint(); commitSoon(); });
+  hexField.addEventListener('input', () => {
+    let v = hexField.value.trim();
+    if (!v.startsWith('#')) v = '#' + v;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+      const c = hexToHsv(v);
+      h = c.h; sat = c.s; val = c.v;
+      paint();
+      accentPicker.value = v;
+      accentPicker.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+  hexField.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); closePop(true); } });
+  document.addEventListener('pointerdown', e => {
+    if (!pop.contains(e.target) && e.target !== accentPicker) closePop(false);
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePop(true); });
+})();
 
 const swatchWrap = document.getElementById('presetSwatches');
 PRESETS.forEach(preset => {

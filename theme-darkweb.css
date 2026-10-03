@@ -1,19 +1,17 @@
 /*
-  LEAD Report Builder - "darkweb" grayscale theme (BETA, gated).
+  LEAD Report Builder - dark grayscale theme (the builder's default look).
 
-  Activated only by the `theme-darkweb` class on <html>, which the flag script
-  in index.html sets from ?theme=darkweb / localStorage `lead_theme`.
-  Without that class every rule below is inert.
+  Applied by the `theme-darkweb` class on <html> in index.html.
 
-  Scope rules (so the report and print output can never be affected):
+  Scope rules (so the report and print output are never affected):
   - Everything is inside @media screen, so print and Save as PDF are untouched.
   - Selectors only target builder chrome (.app-header, .panel and its controls).
     Nothing targets .report-wrap or anything inside it.
   - The shared variables (--accent, --black, --gray, --line, --bg, ...) are NOT
     redefined, because the report reads them. Theme colors live in --dw-* only.
   - `html.theme-darkweb body` prefix out-ranks both the base rules and the
-    existing `body.lumin-mode` chrome rules, so the chrome stays grayscale with
-    Lumin Mode on or off (Lumin Mode still themes the report as before).
+    existing `body.lumin-mode` chrome rules, so the chrome stays on this palette
+    with Lumin Mode on or off (Lumin Mode still themes the report as before).
 */
 @media screen {
 
@@ -185,6 +183,14 @@
   html.theme-darkweb body .switch input:checked + .switch-track { background-color: var(--dw-active-bg); }
   html.theme-darkweb body .switch input:checked + .switch-track .switch-thumb { background-color: var(--dw-active-fg); }
 
+  /* ---- Accent color picker popover (hex field and label are styled by the .field rules above) ---- */
+  html.theme-darkweb body .cp-pop {
+    background-color: var(--dw-raised);
+    border-color: var(--dw-ctrl-border);
+    border-radius: 2px;
+  }
+  html.theme-darkweb body .cp-sv { border-radius: 2px; }
+
   /* ---- Accent swatch tooltips (swatch circles untouched) ---- */
   html.theme-darkweb body .swatch::after {
     background-color: var(--dw-raised);
@@ -194,15 +200,15 @@
   }
   html.theme-darkweb body .swatch::before { border-top-color: var(--dw-ctrl-border); }
 
-  /* ---- Hover glow in the selected accent color (buttons and option cards) ---- */
+  /* ---- Hover glow in the selected accent color, drawn inside the button edges ---- */
   html.theme-darkweb body .btn,
   html.theme-darkweb body .option-box {
     transition: border-color .15s, background-color .15s, box-shadow .15s;
   }
   html.theme-darkweb body .btn:hover,
   html.theme-darkweb body .option-box:hover {
-    box-shadow: 0 0 12px var(--accent);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 70%, transparent);
+    box-shadow: inset 0 0 12px var(--accent);
+    box-shadow: inset 0 0 12px color-mix(in srgb, var(--accent) 70%, transparent);
   }
   html.theme-darkweb body .btn:disabled:hover {
     box-shadow: none;
@@ -228,8 +234,8 @@
   }
   html.theme-darkweb body.lumin-mode .btn:hover {
     background-color: var(--dw-hover);
-    box-shadow: inset 0 0 0 1px var(--dw-ctrl-border), 0 0 12px var(--accent);
-    box-shadow: inset 0 0 0 1px var(--dw-ctrl-border), 0 0 12px color-mix(in srgb, var(--accent) 70%, transparent);
+    box-shadow: inset 0 0 0 1px var(--dw-ctrl-border), inset 0 0 12px var(--accent);
+    box-shadow: inset 0 0 0 1px var(--dw-ctrl-border), inset 0 0 12px color-mix(in srgb, var(--accent) 70%, transparent);
   }
   html.theme-darkweb body.lumin-mode .btn:disabled,
   html.theme-darkweb body.lumin-mode .btn:disabled:hover {
