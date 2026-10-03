@@ -82,11 +82,17 @@
     gap: 14px;
     margin-bottom: 26px;
   }
+  #leftColumnWrap > #exportPanel, #brandingColumnWrap > #brandingPanel { flex: 1 1 auto; }
   @media (max-width: 820px) {
     .controls { grid-template-columns: 1fr; }
   }
   .panel { background: white; border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; }
   .report-type-panel { margin-bottom: 14px; }
+  .top-panels-row { display: flex; align-items: stretch; gap: 14px; }
+  .top-panels-row > .panel { flex: 1 1 0; min-width: 0; margin-bottom: 14px; }
+  @media (max-width: 820px) {
+    .top-panels-row { flex-direction: column; }
+  }
   .panel select {
     width: 100%;
     font-family: 'Barlow SC', Arial, sans-serif;
@@ -125,7 +131,7 @@
   }
   .panel-toggle-dropdown { margin-top: 10px; }
   .panel h3 {
-    font-size: 40px;
+    font-size: 35px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
@@ -758,6 +764,22 @@
     @page { size: letter; margin: 0.25in; }
   }
 </style>
+<link rel="stylesheet" href="theme-darkweb.css">
+<script>
+(function () {
+  var flag = null;
+  try { flag = new URLSearchParams(location.search).get('theme'); } catch (e) {}
+  try {
+    if (flag === 'darkweb') localStorage.setItem('lead_theme', 'darkweb');
+    else if (flag === 'default') localStorage.removeItem('lead_theme');
+  } catch (e) {}
+  var on = flag === 'darkweb';
+  if (flag !== 'darkweb' && flag !== 'default') {
+    try { on = localStorage.getItem('lead_theme') === 'darkweb'; } catch (e) {}
+  }
+  if (on) document.documentElement.classList.add('theme-darkweb');
+})();
+</script>
 </head>
 <body>
 <div id="chargeFlash" aria-hidden="true"></div>
@@ -773,22 +795,37 @@
   <div class="panel report-type-panel no-print">
     <h3>Report Type</h3>
     <div class="field" style="margin-bottom:0;">
-      <label for="reportCategory">Choose a report</label>
-      <select id="reportCategory">
+      <label>Choose a report</label>
+      <select id="reportCategory" style="display:none;" aria-hidden="true" tabindex="-1">
         <option value="force_category" selected>Force Reports - Hawkin Dynamics</option>
         <option value="speed_category">Speed Reports - Lumin Sports</option>
         <option value="training_summary">Team Training Reports - Lumin Sports</option>
       </select>
+      <div class="option-box-row" id="reportCategoryOptions">
+        <label class="option-box">
+          <input type="radio" name="reportCategoryChoice" value="force_category" checked>
+          Force Reports<br>Hawkin Dynamics
+        </label>
+        <label class="option-box">
+          <input type="radio" name="reportCategoryChoice" value="speed_category">
+          Speed Reports<br>Lumin Sports
+        </label>
+        <label class="option-box">
+          <input type="radio" name="reportCategoryChoice" value="training_summary">
+          Team Training Reports<br>Lumin Sports
+        </label>
+      </div>
     </div>
   </div>
 
-  <div class="panel no-print" id="testTypePanel" style="display:none; margin-bottom:14px;">
+  <div class="top-panels-row no-print">
+  <div class="panel no-print" id="testTypePanel" style="display:none;">
     <h3>Test Type</h3>
     <div class="option-box-row" id="testTypeOptions"></div>
   </div>
 
-  <div class="panel no-print" id="reportScopePanel" style="display:none; margin-bottom:14px;">
-    <h3>Report Population</h3>
+  <div class="panel no-print" id="reportScopePanel" style="display:none;">
+    <h3>Population</h3>
     <div class="option-box-row">
       <label class="option-box">
         <input type="radio" name="reportScope" id="scopeAthlete" value="athlete">
@@ -799,6 +836,7 @@
         Team Report
       </label>
     </div>
+  </div>
   </div>
 
   <div class="panel no-print" id="cmjTeamTestPanel" style="display:none; margin-bottom:14px;">
@@ -814,16 +852,17 @@
       </label>
       <label class="option-box">
         <input type="radio" name="cmjTeamTest" value="peakPower">
-        Peak Power Score (W/kg)
+        Relative Peak Power
       </label>
       <label class="option-box">
         <input type="radio" name="cmjTeamTest" value="mrsi">
-        Movement Efficiency Score (mRSI)
+        mRSI
       </label>
     </div>
   </div>
 
   <div class="controls no-print" id="controlsWrap">
+    <div id="leftColumnWrap" style="display:flex; flex-direction:column; gap:14px;">
     <div class="panel" id="rosterDataPanel">
       <h3>Roster Data</h3>
       <div class="field">
@@ -973,7 +1012,6 @@
         <select id="forceAthleteSelect"></select>
       </div>
       <div class="hint">Start and end auto-fill from the CSV's first and last test dates - adjust either to filter which tests are included. Same-day jumps: best attempt used.</div>
-      <div style="height:70px;" id="forceSpacer"></div>
     </div>
 
     <div class="panel" id="cmjCompareToPanel">
@@ -1006,6 +1044,15 @@
     </div>
     </div>
 
+    <div class="panel" id="exportPanel">
+      <h3>Export</h3>
+      <div class="action-row">
+        <button class="btn" id="printBtn">Print Report</button>
+        <button class="btn" id="saveBtn">Save Report</button>
+      </div>
+    </div>
+    </div>
+
     <div id="brandingColumnWrap" style="display:flex; flex-direction:column; gap:14px;">
     <div class="panel" id="brandingPanel">
       <h3>Branding</h3>
@@ -1017,7 +1064,7 @@
         <label for="teamName" id="teamNameLabel">Team Name</label>
         <input type="text" id="teamName" placeholder="e.g. West Park Baseball">
       </div>
-      <div class="field">
+      <div class="field" style="margin-bottom:22px;">
         <label for="coachName">Coach Name (optional)</label>
         <input type="text" id="coachName" placeholder="e.g. Coach Smith">
       </div>
@@ -1029,7 +1076,7 @@
         </div>
         <div class="swatch-row" id="presetSwatches"></div>
       </div>
-      <div class="field">
+      <div class="field" style="margin-bottom:22px;">
         <label class="switch-row">
           <span class="switch">
             <input type="checkbox" id="luminModeToggle">
@@ -1053,14 +1100,6 @@
       </div>
     </div>
 
-    <div class="panel" id="exportPanel">
-      <h3>Export</h3>
-      <div class="action-row">
-        <button class="btn" id="printBtn">Print Report</button>
-        <button class="btn" id="saveBtn">Save Report</button>
-      </div>
-      <div class="hint">Print Report: choose Save as PDF in the print dialog. Save Report: downloads a PDF copy of this report directly.</div>
-    </div>
     </div>
   </div>
 
@@ -3679,7 +3718,6 @@ function updateReadyState() {
   const forceTeamMode = (val === 'force' && scope === 'team');
   setPanelToggleVisible('force', forceTeamMode);
   document.getElementById('cmjTeamTestPanel').style.display = forceTeamMode ? 'block' : 'none';
-  document.getElementById('forceSpacer').style.display = forceTeamMode ? 'none' : 'block';
   // Compare To now hosts two different controls depending on scope — the axis
   // toggle only matters where there's a team of charts to share a scale across,
   // the sex toggle only matters where tier thresholds are being calculated.
@@ -3823,6 +3861,18 @@ applyAccent('#B8933D');
 // Restore the saved theme before the first render so the report is drawn with
 // the right colors immediately rather than flashing light then switching.
 if (loadLuminPreference()) setLuminMode(true, { persist: false });
+(function () {
+  const sel = document.getElementById('reportCategory');
+  const radios = document.querySelectorAll('input[name="reportCategoryChoice"]');
+  radios.forEach(r => r.addEventListener('change', () => {
+    if (!r.checked || sel.value === r.value) return;
+    sel.value = r.value;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  }));
+  function sync() { radios.forEach(r => { r.checked = r.value === sel.value; }); }
+  sel.addEventListener('change', sync);
+  sync();
+})();
 document.getElementById('reportCategory').dispatchEvent(new Event('change'));
 </script>
 </body>

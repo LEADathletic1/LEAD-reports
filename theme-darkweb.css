@@ -1,0 +1,260 @@
+/*
+  LEAD Report Builder - "darkweb" grayscale theme (BETA, gated).
+
+  Activated only by the `theme-darkweb` class on <html>, which the flag script
+  in index.html sets from ?theme=darkweb / localStorage `lead_theme`.
+  Without that class every rule below is inert.
+
+  Scope rules (so the report and print output can never be affected):
+  - Everything is inside @media screen, so print and Save as PDF are untouched.
+  - Selectors only target builder chrome (.app-header, .panel and its controls).
+    Nothing targets .report-wrap or anything inside it.
+  - The shared variables (--accent, --black, --gray, --line, --bg, ...) are NOT
+    redefined, because the report reads them. Theme colors live in --dw-* only.
+  - `html.theme-darkweb body` prefix out-ranks both the base rules and the
+    existing `body.lumin-mode` chrome rules, so the chrome stays grayscale with
+    Lumin Mode on or off (Lumin Mode still themes the report as before).
+*/
+@media screen {
+
+  html.theme-darkweb {
+    --dw-page: #0a0a0b;
+    --dw-panel: #141416;
+    --dw-field: #0a0a0b;
+    --dw-raised: #1b1b1e;
+    --dw-hover: #232326;
+    --dw-ctrl-border: #35353a;
+    --dw-divider: #2a2a2e;
+    --dw-text: #cfcfd2;
+    --dw-bright: #f2f1ee;
+    --dw-muted: #8a8a8e;
+    --dw-disabled: #55555a;
+    --dw-active-bg: #e8e8ea;
+    --dw-active-fg: #141416;
+    --dw-focus: #e8e8ea;
+    background: var(--dw-page);
+  }
+
+  /* ---- Page + header ---- */
+  html.theme-darkweb body { background: var(--dw-page); }
+  html.theme-darkweb body .app-title { color: var(--dw-bright); }
+  html.theme-darkweb body .app-subtitle { color: var(--dw-muted); }
+
+  /* ---- Panels ---- */
+  html.theme-darkweb body .panel {
+    background-color: var(--dw-panel);
+    border-color: var(--dw-divider);
+    border-radius: 2px;
+    color: var(--dw-text);
+  }
+  /* Title underline follows the accent color picked in Branding */
+  html.theme-darkweb body .panel h3 {
+    color: var(--dw-bright);
+    border-bottom-color: var(--accent);
+  }
+  /* Inline style="color:var(--gray)" on the Coming Soon subtitle */
+  html.theme-darkweb body #comingSoonSubtitle { color: var(--dw-muted) !important; }
+
+  /* ---- Labels, helper text ---- */
+  html.theme-darkweb body .field label { color: var(--dw-muted); }
+  html.theme-darkweb body .switch-label,
+  html.theme-darkweb body .checkbox-row { color: var(--dw-text); }
+  html.theme-darkweb body .hint,
+  html.theme-darkweb body .date-range-row span,
+  html.theme-darkweb body .dropzone .dz-sub { color: var(--dw-muted); }
+  html.theme-darkweb body .template-link { color: var(--dw-text); }
+  html.theme-darkweb body .template-link:hover { color: var(--dw-bright); }
+
+  /* ---- Text inputs, textareas ---- */
+  html.theme-darkweb body .field input[type=text],
+  html.theme-darkweb body .field input[type=date],
+  html.theme-darkweb body .field textarea {
+    background-color: var(--dw-field);
+    border-color: var(--dw-ctrl-border);
+    border-radius: 2px;
+    color: var(--dw-bright);
+    color-scheme: dark;
+  }
+  html.theme-darkweb body .field input::placeholder,
+  html.theme-darkweb body .field textarea::placeholder {
+    color: var(--dw-muted);
+    opacity: 1;
+  }
+  html.theme-darkweb body .color-row input[type=color] {
+    background-color: var(--dw-field);
+    border-color: var(--dw-ctrl-border);
+    border-radius: 2px;
+  }
+  html.theme-darkweb body .panel input[type=checkbox] {
+    accent-color: var(--dw-active-bg);
+    color-scheme: dark;
+  }
+
+  /* ---- Selects (raised surface) ---- */
+  html.theme-darkweb body .panel select {
+    background-color: var(--dw-raised);
+    border-color: var(--dw-ctrl-border);
+    border-radius: 2px;
+    color: var(--dw-bright);
+    color-scheme: dark;
+  }
+  html.theme-darkweb body .panel select option {
+    background-color: var(--dw-raised);
+    color: var(--dw-bright);
+  }
+
+  /* ---- Option boxes (radio cards) + toggle buttons ---- */
+  html.theme-darkweb body .option-box {
+    background-color: var(--dw-field);
+    border-color: var(--dw-ctrl-border);
+    border-radius: 2px;
+    color: var(--dw-text);
+  }
+  html.theme-darkweb body .option-box:hover { background-color: var(--dw-hover); }
+  /* Open Date Range / Exclude Athletes toggle */
+  html.theme-darkweb body .panel-toggle-btn.active {
+    background-color: var(--dw-hover);
+    border-color: var(--dw-focus);
+    color: var(--dw-bright);
+  }
+  /* Selected radio card: inverted, no accent color */
+  html.theme-darkweb body .option-box:has(input:checked) {
+    background-color: var(--dw-active-bg);
+    border-color: var(--dw-active-bg);
+    color: var(--dw-active-fg);
+  }
+
+  /* ---- Upload areas ---- */
+  html.theme-darkweb body .dropzone {
+    background-color: var(--dw-field);
+    border-color: var(--dw-ctrl-border);
+    border-radius: 2px;
+  }
+  html.theme-darkweb body .dropzone:hover { background-color: var(--dw-hover); }
+  html.theme-darkweb body .dropzone.drag {
+    background-color: var(--dw-hover);
+    border-color: var(--dw-focus);
+  }
+  html.theme-darkweb body .dropzone .dz-title { color: var(--dw-text); }
+  html.theme-darkweb body .dropzone .dz-file { color: var(--dw-bright); }
+
+  /* ---- Buttons ---- */
+  html.theme-darkweb body .btn {
+    background-color: var(--dw-active-bg);
+    color: var(--dw-active-fg);
+    border-radius: 2px;
+  }
+  html.theme-darkweb body .btn:hover { background-color: var(--dw-bright); }
+  html.theme-darkweb body .btn.secondary {
+    background-color: transparent;
+    color: var(--dw-text);
+    border-color: var(--dw-ctrl-border);
+  }
+  html.theme-darkweb body .btn.secondary:hover { background-color: var(--dw-hover); }
+  html.theme-darkweb body .btn:disabled,
+  html.theme-darkweb body .btn:disabled:hover,
+  html.theme-darkweb body .btn.secondary:disabled,
+  html.theme-darkweb body .btn.secondary:disabled:hover {
+    background-color: var(--dw-raised);
+    color: var(--dw-disabled);
+    border-color: var(--dw-divider);
+  }
+  html.theme-darkweb body .panel input:disabled,
+  html.theme-darkweb body .panel textarea:disabled,
+  html.theme-darkweb body .panel select:disabled {
+    background-color: var(--dw-raised);
+    color: var(--dw-disabled);
+  }
+
+  /* ---- Brand logo chip ---- */
+  html.theme-darkweb body .brand-logo-chip {
+    background-color: var(--dw-field);
+    border-color: var(--dw-ctrl-border);
+    border-radius: 2px;
+    color: var(--dw-text);
+  }
+  html.theme-darkweb body .brand-logo-chip .remove-btn { color: var(--dw-muted); }
+  html.theme-darkweb body .brand-logo-chip .remove-btn:hover { color: var(--dw-bright); }
+
+  /* ---- Lumin Mode toggle switch (shape untouched) ---- */
+  html.theme-darkweb body .switch-track { background-color: var(--dw-ctrl-border); }
+  html.theme-darkweb body .switch-thumb {
+    background-color: var(--dw-text);
+    box-shadow: none;
+  }
+  html.theme-darkweb body .switch input:checked + .switch-track { background-color: var(--dw-active-bg); }
+  html.theme-darkweb body .switch input:checked + .switch-track .switch-thumb { background-color: var(--dw-active-fg); }
+
+  /* ---- Accent swatch tooltips (swatch circles untouched) ---- */
+  html.theme-darkweb body .swatch::after {
+    background-color: var(--dw-raised);
+    border: 1px solid var(--dw-ctrl-border);
+    border-radius: 2px;
+    color: var(--dw-bright);
+  }
+  html.theme-darkweb body .swatch::before { border-top-color: var(--dw-ctrl-border); }
+
+  /* ---- Hover glow in the selected accent color (buttons and option cards) ---- */
+  html.theme-darkweb body .btn,
+  html.theme-darkweb body .option-box {
+    transition: border-color .15s, background-color .15s, box-shadow .15s;
+  }
+  html.theme-darkweb body .btn:hover,
+  html.theme-darkweb body .option-box:hover {
+    box-shadow: 0 0 12px var(--accent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 70%, transparent);
+  }
+  html.theme-darkweb body .btn:disabled:hover {
+    box-shadow: none;
+  }
+
+  /* ---- Lumin Mode: cyan titles and underlines, dark buttons, cyan outline when selected.
+     Cyan is the app's own Lumin accent (LUMIN_ACCENT in index.html), delivered via --accent. ---- */
+  /* Lumin Mode swaps the page and panel backgrounds (page lighter, panels darker) */
+  html.theme-darkweb:has(body.lumin-mode) {
+    --dw-page: #141416;
+    --dw-panel: #0a0a0b;
+  }
+  html.theme-darkweb body.lumin-mode .panel h3 {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  html.theme-darkweb body.lumin-mode .template-link { color: var(--accent); }
+  html.theme-darkweb body.lumin-mode .template-link:hover { color: var(--dw-bright); }
+  html.theme-darkweb body.lumin-mode .btn {
+    background-color: var(--dw-field);
+    color: var(--dw-bright);
+    box-shadow: inset 0 0 0 1px var(--dw-ctrl-border);
+  }
+  html.theme-darkweb body.lumin-mode .btn:hover {
+    background-color: var(--dw-hover);
+    box-shadow: inset 0 0 0 1px var(--dw-ctrl-border), 0 0 12px var(--accent);
+    box-shadow: inset 0 0 0 1px var(--dw-ctrl-border), 0 0 12px color-mix(in srgb, var(--accent) 70%, transparent);
+  }
+  html.theme-darkweb body.lumin-mode .btn:disabled,
+  html.theme-darkweb body.lumin-mode .btn:disabled:hover {
+    background-color: var(--dw-raised);
+    color: var(--dw-disabled);
+    box-shadow: none;
+  }
+  html.theme-darkweb body.lumin-mode .option-box:has(input:checked),
+  html.theme-darkweb body.lumin-mode .panel-toggle-btn.active {
+    background-color: var(--dw-field);
+    border-color: var(--accent);
+    color: var(--dw-bright);
+  }
+
+  /* ---- Focus ring: 1px, no glow ---- */
+  html.theme-darkweb body .panel :focus-visible {
+    outline: 1px solid var(--dw-focus);
+    outline-offset: 0;
+  }
+  html.theme-darkweb body .option-box:has(input:focus-visible) {
+    outline: 1px solid var(--dw-focus);
+    outline-offset: 0;
+  }
+  html.theme-darkweb body .switch input:focus-visible + .switch-track {
+    outline: 1px solid var(--dw-focus);
+    outline-offset: 0;
+  }
+}
