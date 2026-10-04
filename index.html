@@ -74,7 +74,7 @@
     margin-top: 10px; text-transform: uppercase; letter-spacing: 0.5px;
   }
   .header-lumin .switch-label { color: #FFFFFF; }
-  #exportPanel .action-row .btn { flex: 1 1 0; padding: 17.5px 10px; text-align: center; }
+  #exportPanel .action-row .btn { flex: 1 1 0; padding: 13px 10px; font-size: 20px; text-align: center; }
   .app-subtitle {
     font-weight: 500;
     font-size: 12.5px;
@@ -3607,79 +3607,245 @@ document.getElementById('brandLogoRemove').addEventListener('click', () => {
 loadStoredBrandLogo();
 
 /* ---------------- Share Report (in-browser PDF, matching the print layout) ---------------- */
-let html2pdfLoadPromise = null;
-function ensureHtml2Pdf() {
-  if (window.html2pdf) return Promise.resolve();
-  if (html2pdfLoadPromise) return html2pdfLoadPromise;
-  html2pdfLoadPromise = new Promise((resolve, reject) => {
+const PDF_LIB_URLS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+];
+const pdfLibPromises = {};
+function loadScriptOnce(src) {
+  if (pdfLibPromises[src]) return pdfLibPromises[src];
+  pdfLibPromises[src] = new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    s.src = src;
     s.onload = resolve;
-    s.onerror = () => { html2pdfLoadPromise = null; reject(new Error('Could not load the PDF library')); };
+    s.onerror = () => { delete pdfLibPromises[src]; reject(new Error('Could not load the PDF library')); };
     document.head.appendChild(s);
   });
-  return html2pdfLoadPromise;
+  return pdfLibPromises[src];
+}
+function ensurePdfLibs() {
+  return Promise.all(PDF_LIB_URLS.map(loadScriptOnce));
 }
 
 function sanitizeFilenamePart(s) {
   return String(s || '').trim().replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 }
 
-function buildReportFilename() {
-  const team = sanitizeFilenamePart(document.getElementById('teamName').value) || 'Report';
-  const title = sanitizeFilenamePart(document.getElementById('reportTitle').value);
-  return `${team}${title ? '_' + title : ''}.pdf`;
+const FILENAME_TEST_TYPES = {
+  force: 'Force Report-CMJ',
+  upper_body_power: 'Force Report-PlyoPU',
+  speed10: 'Speed10',
+  speed30: 'Speed30',
+  agility: 'Agility',
+  training_summary: 'Team-Training-Report',
+};
+
+// Default file name: FirstInitialLastName_TestType_MM-DD (today's date). Team
+// reports have no athlete, so the team name stands in for the name part.
+function buildReportBaseName() {
+  const raw = document.getElementById('teamName').value.trim();
+  let who;
+  if (currentReportType !== 'training_summary' && getReportScope() === 'athlete') {
+    const parts = raw.split(/\s+/).filter(Boolean).map(w => w.replace(/[^A-Za-z0-9-]/g, '')).filter(Boolean);
+    who = parts.length > 1 ? parts[0][0].toUpperCase() + parts[parts.length - 1] : (parts[0] || '');
+  } else {
+    who = sanitizeFilenamePart(raw);
+  }
+  const d = new Date();
+  const date = String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  return [who, FILENAME_TEST_TYPES[currentReportType], date].filter(Boolean).join('_');
 }
 
-// Mirrors the @media print rules for #report-wrap (see the print stylesheet
-// above) so the in-browser PDF matches the print-dialog layout exactly,
-// rather than capturing the on-screen card styling (border, rounded corners,
-// smaller padding).
-//
-// KNOWN LIMITATION (unresolved): html2canvas (which this PDF path is built
-// on) does not reliably capture this report's inline SVG charts — the
-// sparkline boxes on the metric cards can render blank/distorted in the
-// generated PDF, and in some runs an entire page captured blank, even
-// though everything renders correctly on screen and in the native print
-// dialog. This appeared intermittent across otherwise-identical runs.
-// Three fixes were tried and reverted, each worse than doing nothing:
-//   - foreignObjectRendering: true -> every page rendered fully blank.
-//   - Resolving SVG var()-based fill/stroke to literal colors pre-capture
-//     -> did not fix the charts and did not change the blank-page behavior.
-//   - Waiting on document.fonts.ready / img.decode() before capture
-//     -> hung indefinitely in this test environment.
-// Left as the plain baseline rather than shipping an unproven "fix". See
-// the PDF fidelity write-up delivered with this change for details.
-async function generateReportPdfFile() {
-  await ensureHtml2Pdf();
-  const el = document.getElementById('reportWrap');
-  const breakEls = el.querySelectorAll('.cmj-page-break');
+function buildReportFilename() {
+  return buildReportBaseName() + '.pdf';
+}
 
-  const prevBorder = el.style.border;
-  const prevRadius = el.style.borderRadius;
-  const prevPadding = el.style.padding;
+// The print dialog's "Save as PDF" uses the page title as its default file name.
+let titleBeforePrint = null;
+window.addEventListener('beforeprint', () => {
+  titleBeforePrint = document.title;
+  document.title = buildReportBaseName();
+});
+window.addEventListener('afterprint', () => {
+  if (titleBeforePrint !== null) { document.title = titleBeforePrint; titleBeforePrint = null; }
+});
+
+// Inline SVG charts don't survive html2canvas (it drops the CSS variables and the
+// page font and mis-scales them), so each one is rasterized here first with its
+// styles and the embedded Barlow SC font baked in, and swapped for a PNG while
+// the PDF is captured.
+const SVG_STYLE_PROPS = ['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-dasharray',
+  'stroke-linecap', 'stroke-linejoin', 'opacity', 'stop-color', 'stop-opacity', 'font-family', 'font-size',
+  'font-weight', 'letter-spacing', 'text-transform', 'text-anchor', 'dominant-baseline'];
+
+function embeddedFontFaceCss() {
+  let css = '';
+  for (const sheet of document.styleSheets) {
+    let rules;
+    try { rules = sheet.cssRules; } catch (e) { continue; }
+    for (const rule of rules) if (rule.type === CSSRule.FONT_FACE_RULE) css += rule.cssText + '\n';
+  }
+  return css;
+}
+
+function inlineSvgStyles(source, copy) {
+  const cs = getComputedStyle(source);
+  SVG_STYLE_PROPS.forEach(prop => copy.style.setProperty(prop, cs.getPropertyValue(prop)));
+  for (let i = 0; i < source.children.length; i++) inlineSvgStyles(source.children[i], copy.children[i]);
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Could not rasterize chart'));
+    img.src = src;
+  });
+}
+
+async function rasterizeInlineSvgs(root) {
+  const swaps = [];
+  const fontCss = embeddedFontFaceCss();
+  for (const svg of root.querySelectorAll('svg')) {
+    const box = svg.getBoundingClientRect();
+    if (!box.width || !box.height) continue;
+    const copy = svg.cloneNode(true);
+    inlineSvgStyles(svg, copy);
+    copy.removeAttribute('style');
+    copy.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    copy.setAttribute('width', box.width);
+    copy.setAttribute('height', box.height);
+    const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    style.textContent = fontCss;
+    copy.insertBefore(style, copy.firstChild);
+    const xml = new XMLSerializer().serializeToString(copy);
+    const url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml;charset=utf-8' }));
+    try {
+      const img = await loadImage(url);
+      const scale = 3;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(box.width * scale);
+      canvas.height = Math.round(box.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const png = document.createElement('img');
+      png.src = canvas.toDataURL('image/png');
+      png.style.cssText = 'display:block;width:' + box.width + 'px;height:' + box.height + 'px;';
+      svg.parentNode.insertBefore(png, svg);
+      swaps.push({ svg, png, prevDisplay: svg.style.display });
+      svg.style.display = 'none';
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+  return () => swaps.forEach(({ svg, png, prevDisplay }) => { png.remove(); svg.style.display = prevDisplay; });
+}
+
+// Places a PDF page break only at safe spots: right before the report's own
+// page-break marker, or before a whole block (table row, card, title, footer),
+// never through the middle of one.
+const BREAK_BLOCKS = 'tr, .header, .page-title, .stat-strip, .cmj-metrics-grid, .cmj-notes-card, .cmj-hist-section, .cmj-fv-grid, .s-card, .footnote, .footer-line, .cmj-top5-grid';
+const UNBREAKABLE = '.s-card, .cmj-notes-card, .cmj-hist-card, .cmj-fv-grid, .cmj-metrics-grid, .stat-strip';
+
+function breakPositions(root, scale) {
+  const top = root.getBoundingClientRect().top;
+  const forced = [...root.querySelectorAll('.cmj-page-break')].map(e => (e.getBoundingClientRect().top - top) * scale);
+  const safe = [];
+  root.querySelectorAll(BREAK_BLOCKS).forEach(e => {
+    if (!e.getClientRects().length) return;
+    const inside = e.parentElement && e.parentElement.closest(UNBREAKABLE) && root.contains(e.parentElement.closest(UNBREAKABLE));
+    if (inside) return;
+    const prev = e.previousElementSibling;
+    if (!prev || prev.matches('.page-title, .page-subtitle, .cmj-page-break')) return;
+    safe.push((e.getBoundingClientRect().top - top) * scale);
+  });
+  return { forced, safe: safe.sort((a, b) => a - b) };
+}
+
+function planPages(total, pageH, forced, safe) {
+  const slices = [];
+  let y = 0;
+  while (total - y > 1) {
+    let end = y + pageH;
+    if (end >= total) {
+      end = total;
+    } else {
+      const forcedAt = forced.find(f => f > y + 1 && f <= end);
+      if (forcedAt) {
+        end = forcedAt;
+      } else {
+        const cut = safe.filter(c => c > y + pageH * 0.4 && c <= end).pop();
+        if (cut) end = cut;
+      }
+    }
+    slices.push([y, end]);
+    y = end;
+  }
+  return slices;
+}
+
+function cssColorToRgb(c) {
+  const m = String(c).match(/rgba?\(([^)]+)\)/);
+  if (!m) return [255, 255, 255];
+  const [r, g, b, a] = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number);
+  return a === 0 ? [255, 255, 255] : [r, g, b];
+}
+
+// The report is captured once, laid out at the print width (8in wide, same
+// padding as the print stylesheet), then cut into letter pages here. The page is
+// scrolled to the top for the capture because html2canvas offsets everything by
+// the scroll position.
+async function generateReportPdfFile() {
+  await ensurePdfLibs();
+  const el = document.getElementById('reportWrap');
+  const breakEls = [...el.querySelectorAll('.cmj-page-break')];
+
+  const prevScrollX = window.scrollX;
+  const prevScrollY = window.scrollY;
+  window.scrollTo(0, 0);
+
+  const prev = { border: el.style.border, radius: el.style.borderRadius, padding: el.style.padding, width: el.style.width, maxWidth: el.style.maxWidth };
   el.style.border = 'none';
   el.style.borderRadius = '0';
   el.style.padding = '0.25in 0.5in 0.4in 0.5in';
-  breakEls.forEach(b => { b.style.breakBefore = 'page'; b.style.pageBreakBefore = 'always'; });
+  el.style.width = '8in';
+  el.style.maxWidth = 'none';
+  const prevBreakHeights = breakEls.map(b => b.style.height);
+  breakEls.forEach(b => { b.style.height = '0'; });
 
+  let restoreSvgs = () => {};
   try {
+    restoreSvgs = await rasterizeInlineSvgs(el);
+    const cssW = el.getBoundingClientRect().width;
+    const cssH = el.getBoundingClientRect().height;
+    const scale = Math.max(1, Math.min(2, Math.sqrt(14000000 / (cssW * cssH))));
+    const bg = cssColorToRgb(getComputedStyle(el).backgroundColor);
+    const { forced, safe } = breakPositions(el, scale);
+    const canvas = await html2canvas(el, { scale, useCORS: true, backgroundColor: null, scrollX: 0, scrollY: 0, windowWidth: document.documentElement.clientWidth, logging: false });
+
+    const pxPerIn = canvas.width / 8;
+    const slices = planPages(canvas.height, 10.5 * pxPerIn, forced, safe);
+    const pdf = new window.jspdf.jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
+    slices.forEach(([y0, y1], i) => {
+      if (i > 0) pdf.addPage();
+      pdf.setFillColor(bg[0], bg[1], bg[2]);
+      pdf.rect(0, 0, 8.5, 11, 'F');
+      const part = document.createElement('canvas');
+      part.width = canvas.width;
+      part.height = Math.round(y1 - y0);
+      part.getContext('2d').drawImage(canvas, 0, y0, canvas.width, part.height, 0, 0, canvas.width, part.height);
+      pdf.addImage(part.toDataURL('image/jpeg', 0.95), 'JPEG', 0.25, 0.25, 8, part.height / pxPerIn);
+    });
     const filename = buildReportFilename();
-    const opt = {
-      margin: 0.25,
-      filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-      pagebreak: { mode: ['css'], before: ['.cmj-page-break'] },
-    };
-    const blob = await html2pdf().set(opt).from(el).outputPdf('blob');
-    return new File([blob], filename, { type: 'application/pdf' });
+    return new File([pdf.output('blob')], filename, { type: 'application/pdf' });
   } finally {
-    el.style.border = prevBorder;
-    el.style.borderRadius = prevRadius;
-    el.style.padding = prevPadding;
-    breakEls.forEach(b => { b.style.breakBefore = ''; b.style.pageBreakBefore = ''; });
+    restoreSvgs();
+    el.style.border = prev.border;
+    el.style.borderRadius = prev.radius;
+    el.style.padding = prev.padding;
+    el.style.width = prev.width;
+    el.style.maxWidth = prev.maxWidth;
+    breakEls.forEach((b, i) => { b.style.height = prevBreakHeights[i]; });
+    window.scrollTo(prevScrollX, prevScrollY);
   }
 }
 
