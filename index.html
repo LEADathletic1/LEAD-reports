@@ -1674,17 +1674,18 @@ function renderSpeedTeamView(reportType, athletes) {
 
   document.getElementById('statStrip').innerHTML = `
     <div class="stat-box"><div class="num">${testedCount}</div><div class="label">Athletes Tested</div></div>
-    <div class="stat-box"><div class="num">${testedCount ? avgCurrent.toFixed(2) + 's' : '-'}</div><div class="label">Team Avg Current Time</div></div>
+    <div class="stat-box"><div class="num">${testedCount ? avgCurrent.toFixed(2) + 's' : '-'}</div><div class="label">Team Current Avg Time</div></div>
     <div class="stat-box"><div class="num">${fastest ? fastest.current.toFixed(2) + 's' : '-'}</div><div class="label">${fastest ? 'Leader - ' + fastest.Athlete : 'Leader'}</div></div>
     <div class="stat-box"><div class="num">${improved ? improved.delta.toFixed(2) + 's' : '-'}</div><div class="label">${improved ? 'Most Improved - ' + improved.a.Athlete : 'Most Improved'}</div></div>
   `;
 
   let html = `<thead><tr>
     <th style="width:6%;">Rank</th>
-    <th style="width:26%;">Athlete</th>
-    <th class="num" style="width:14%;">Current Time</th>
+    <th style="width:24%;">Athlete</th>
+    <th class="num" style="width:14%;">Tests Recorded</th>
+    <th class="num" style="width:14%;">First Time</th>
+    <th class="num" style="width:14%;">Last Time</th>
     <th class="num" style="width:14%;">Best Time</th>
-    <th class="num" style="width:12%;">Tests Taken</th>
     <th class="num" style="width:14%;">Change</th>
   </tr></thead><tbody>`;
   for (const a of athletes) {
@@ -1698,9 +1699,10 @@ function renderSpeedTeamView(reportType, athletes) {
     html += `<tr class="${a.Rank <= 3 ? 'top3' : ''}">
       <td><span class="rank-badge ${a.Rank <= 3 ? 'gold' : ''}">${a.Rank}</span></td>
       <td>${a.Athlete}</td>
+      <td class="num">${a.testsCount}</td>
+      <td class="num">${a.first.toFixed(2)}s</td>
       <td class="num">${a.current.toFixed(2)}s</td>
       <td class="num">${a.best.toFixed(2)}s</td>
-      <td class="num">${a.testsCount}</td>
       <td class="num">${deltaCell}</td>
     </tr>`;
   }
@@ -1713,7 +1715,7 @@ function renderSpeedTeamView(reportType, athletes) {
       html += `<tr>
         <td><span class="sub">-</span></td>
         <td>${name}</td>
-        <td colspan="4" class="roster-no-test">No test on file</td>
+        <td colspan="5" class="roster-no-test">No test on file</td>
       </tr>`;
     }
   }
@@ -3297,9 +3299,14 @@ function downloadCsvTemplate(rows, filename) {
 }
 
 document.getElementById('cmjTemplateBtn').addEventListener('click', () => {
+  // Segment must read "Countermovement Jump:1", ":2", ... — the Athlete Profile
+  // (Gas / Brakes) quadrants only use those standard trials. Braking velocity is
+  // negative in Hawkin exports; the report uses its absolute value.
   downloadCsvTemplate([
-    ['Name', 'Date', 'Time', 'Jump Height', 'Peak Relative Propulsive Power', 'mRSI'],
-    ['EXAMPLE - DELETE THIS ROW', '25/12/2026', '15:30:00', '18.5', '65.0', '0.55'],
+    ['Name', 'Date', 'Time', 'Segment', 'Jump Height', 'Peak Relative Propulsive Power', 'mRSI',
+     'Avg. Relative Propulsive Force', 'Avg. Propulsive Velocity', 'Avg. Relative Braking Force', 'Avg. Braking Velocity'],
+    ['EXAMPLE - DELETE THIS ROW', '25/12/2026', '15:30:00', 'Countermovement Jump:1', '18.5', '65.0', '0.55',
+     '215.0', '1.75', '205.0', '-1.00'],
   ], 'LEAD_CMJ_Data_Template.csv');
 });
 
