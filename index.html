@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <title>LEAD Report Builder</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   @font-face {
     font-family: 'Barlow SC';
@@ -315,6 +316,7 @@
     background: none; border: none; padding: 0; font-family: 'Barlow SC', Arial, sans-serif;
   }
   .template-link:hover { color: var(--black); }
+  .sampleZipBtn { margin-left: auto; margin-right: 6px; }
 
   /* ---------------- Report (printable) ---------------- */
   .report-wrap {
@@ -896,6 +898,7 @@
       <div class="field">
         <div class="field-header-row">
           <label>Period 1 CSV <span id="p1RequiredTag">(required)</span></label>
+          <button type="button" class="template-link sampleZipBtn" id="sampleRosterZipBtn">Download Sample CSVs</button>
           <button type="button" class="template-link" id="rosterTemplateBtn">Download CSV Template</button>
         </div>
         <div class="dropzone" id="dz1">
@@ -946,6 +949,7 @@
       <div class="field">
         <div class="field-header-row">
           <label>Physical Testing Report CSV <span>(required)</span></label>
+          <button type="button" class="template-link sampleZipBtn" id="sampleSpeedZipBtn">Download Sample CSVs</button>
           <button type="button" class="template-link" id="speedTemplateBtn">Download CSV Template</button>
         </div>
         <div class="dropzone" id="dzSpeed">
@@ -1006,6 +1010,7 @@
       <div class="field">
         <div class="field-header-row">
           <label>Hawkin CMJ Export CSV <span>(required)</span></label>
+          <button type="button" class="template-link sampleZipBtn" id="sampleCmjZipBtn">Download Sample CSVs</button>
           <button type="button" class="template-link" id="cmjTemplateBtn">Download CSV Template</button>
         </div>
         <div class="dropzone" id="dzForce">
@@ -3308,6 +3313,40 @@ document.getElementById('cmjTemplateBtn').addEventListener('click', () => {
     ['EXAMPLE - DELETE THIS ROW', '25/12/2026', '15:30:00', 'Countermovement Jump:1', '18.5', '65.0', '0.55',
      '215.0', '1.75', '205.0', '-1.00'],
   ], 'LEAD_CMJ_Data_Template.csv');
+});
+
+// One zip with all four sample CSVs, built in the browser from /samples.
+const SAMPLE_ZIP_FILES = [
+  'Sample Session Overview Report.csv',
+  'Sample Speed Report - 10-30 Yard.csv',
+  'Sample Speed Report - 5-10-5 Agility.csv',
+  'Sample Force Report - CMJ.csv',
+];
+
+async function downloadSampleZip(btn) {
+  const label = btn.textContent;
+  btn.disabled = true;
+  try {
+    if (typeof JSZip === 'undefined') throw new Error('Zip library unavailable');
+    const contents = await Promise.all(SAMPLE_ZIP_FILES.map(async (name) => {
+      const res = await fetch('samples/' + encodeURIComponent(name), { cache: 'no-cache' });
+      if (!res.ok) throw new Error('Could not load ' + name);
+      return res.arrayBuffer();
+    }));
+    const zip = new JSZip();
+    SAMPLE_ZIP_FILES.forEach((name, i) => zip.file(name, contents[i]));
+    const blob = await zip.generateAsync({ type: 'blob' });
+    downloadFile(new File([blob], 'LEAD_Sample_CSVs.zip', { type: 'application/zip' }));
+  } catch (err) {
+    btn.textContent = 'Could not load samples';
+    setTimeout(() => { btn.textContent = label; }, 4000);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.querySelectorAll('.sampleZipBtn').forEach((btn) => {
+  btn.addEventListener('click', () => downloadSampleZip(btn));
 });
 
 document.getElementById('rosterTemplateBtn').addEventListener('click', () => {
