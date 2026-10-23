@@ -549,6 +549,7 @@
     text-transform: uppercase; color: var(--gray); margin-top: 3px;
   }
   .cmj-hist-note { font-size: 9px; color: var(--gray); margin-top: 4px; font-style: italic; }
+  .cmj-notes-footnote.cmj-fv-footnote { margin-top: 4px; padding-top: 0; border-top: none; }
   .cmj-notes-footnote {
     margin-top: 10px; padding-top: 8px; border-top: 0.75px solid var(--line);
     font-size: 9.5px; color: var(--gray); font-style: italic;
@@ -824,14 +825,14 @@
     <div class="field" style="margin-bottom:0;">
       <label>Choose a report</label>
       <select id="reportCategory" style="display:none;" aria-hidden="true" tabindex="-1">
-        <option value="force_category" selected>Force Reports - Hawkin Dynamics</option>
+        <option value="force_category" selected>Force Reports - Hawkin Dynamics / VALD</option>
         <option value="speed_category">Speed Reports - Lumin Sports</option>
         <option value="training_summary">Team Training Reports - Lumin Sports</option>
       </select>
       <div class="option-box-row" id="reportCategoryOptions">
         <label class="option-box">
           <input type="radio" name="reportCategoryChoice" value="force_category" checked>
-          Force Reports<br>Hawkin Dynamics
+          Force Reports<br>Hawkin Dynamics / VALD
         </label>
         <label class="option-box">
           <input type="radio" name="reportCategoryChoice" value="speed_category">
@@ -1005,20 +1006,20 @@
     <div class="panel" id="forceDataPanel">
       <h3>Force Data</h3>
       <div class="field">
-        <label>Find This In: Hawkin Cloud → Select Athlete → Tests → Export Tests</label>
+        <label id="forceFindThisIn">Locate in Hawkin Cloud: Select Athlete → Tests → Export Tests</label>
       </div>
       <div class="field">
         <div class="field-header-row">
-          <label>Hawkin CMJ Export CSV</label>
           <button type="button" class="template-link sampleZipBtn" id="sampleCmjZipBtn">Download Sample CSVs</button>
           <button type="button" class="template-link" id="cmjTemplateBtn">Download CSV Template</button>
         </div>
         <div class="dropzone" id="dzForce">
           <div class="dz-title">Drop CSV here or click to browse</div>
-          <div class="dz-sub">Hawkin Dynamics Countermovement Jump export - one row per test</div>
+          <div class="dz-sub">Hawkin or VALD CSV files accepted</div>
           <div class="dz-file" id="dzForceFile"></div>
           <input type="file" id="fileForce" accept=".csv">
         </div>
+        <div class="hint" id="forceSourceLabel" style="display:none;"></div>
       </div>
       <div class="field">
         <div class="panel-toggle-row">
@@ -1927,9 +1928,9 @@ function cmToInches(cm) {
 // comparing two real exports where the day fell in different slot positions.
 // Detected once per file: if any date's second slot is > 12 it can only be a
 // day, so the file is month-first; if any date's first slot is > 12 the file
-// is day-first. Falls back to day-first (the originally-documented default)
+// is day-first. Falls back to `fallback` (day-first unless told otherwise)
 // when every date in the file is ambiguous (both slots <= 12).
-function detectHawkinDateFormat(rawRows) {
+function detectHawkinDateFormat(rawRows, fallback = 'DMY') {
   let firstGT12 = false;
   let secondGT12 = false;
   for (const r of rawRows) {
@@ -1941,7 +1942,8 @@ function detectHawkinDateFormat(rawRows) {
     if (b > 12) secondGT12 = true;
   }
   if (secondGT12 && !firstGT12) return 'MDY';
-  return 'DMY';
+  if (firstGT12 && !secondGT12) return 'DMY';
+  return fallback;
 }
 
 function parseHawkinDateTime(dateStr, timeStr, format) {
@@ -1961,13 +1963,20 @@ function getForceDateBounds() {
 }
 
 function parseCmjRows(rawRows) {
+  if (detectForceSource(rawRows) === 'vald') return parseValdCmjRows(rawRows);
   const { start, end } = getForceDateBounds();
   const excludeSet = getExcludeSet('forceExcludeNames');
   const dateFormat = detectHawkinDateFormat(rawRows);
+  // Every chart uses standard CMJ trials only. Arm-swing and combo segments are
+  // a different movement and inflate jump height. A file with no Segment column
+  // at all can't be filtered, so it is used as-is.
+  const hasSegment = rawRows.length > 0 && 'Segment' in rawRows[0];
   const rows = [];
   for (const r of rawRows) {
     const excludedFlag = String(r['Excluded'] || '').trim().toLowerCase();
     if (excludedFlag && excludedFlag !== 'false' && excludedFlag !== 'nan') continue;
+    const standard = isStandardCmjSegment(r['Segment']);
+    if (hasSegment && !standard) continue;
     const dt = parseHawkinDateTime(r['Date'], r['Time'], dateFormat);
     if (!dt) continue;
     if (start && dt.date < start) continue;
@@ -1979,6 +1988,7 @@ function parseCmjRows(rawRows) {
       date: dt.date,
       sortKey: dt.sortKey,
       segment: String(r['Segment'] || ''),
+      standard,
       jumpHeight: toNum(r['Jump Height']),
       peakPower: toNum(r['Peak Relative Propulsive Power']),
       mrsi: toNum(r['mRSI']),
@@ -1986,6 +1996,110 @@ function parseCmjRows(rawRows) {
       propVelocity: toNum(r['Avg. Propulsive Velocity']),
       brakeForce: toNum(r['Avg. Relative Braking Force']),
       brakeVelocity: toNum(r['Avg. Braking Velocity']),
+    });
+  }
+  rows.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+  return rows;
+}
+
+/* ---- VALD ForceDecks: translated into the same row shape parseCmjRows returns ---- */
+// VALD headers carry trailing spaces and the file starts with a UTF-8 BOM.
+function normCsvKey(k) {
+  return String(k).replace(/^\uFEFF/, '').trim();
+}
+
+function normalizeRowKeys(r) {
+  const out = {};
+  for (const k of Object.keys(r)) out[normCsvKey(k)] = r[k];
+  return out;
+}
+
+function isValdCmjHeaders(keys) {
+  return keys.includes('Test Type') && keys.includes('Reps') && keys.some(k => k.startsWith('Jump Height'));
+}
+
+function detectForceSource(rawRows) {
+  const first = rawRows && rawRows[0];
+  if (!first) return 'hawkin';
+  return isValdCmjHeaders(Object.keys(first).map(normCsvKey)) ? 'vald' : 'hawkin';
+}
+
+const VALD_COLUMNS = {
+  peakPower: 'Peak Power / BM [W/kg]',
+  mrsi: 'RSI-modified [m/s]',
+  propForce: 'Concentric Mean Force / BM [N/kg]',
+  propVelocity: 'Concentric Mean Velocity [m/s]',
+  brakeForce: 'Eccentric Deceleration Mean Force / BM [N/kg]',
+  brakeVelocity: 'Eccentric Deceleration Mean Velocity [m/s]',
+};
+
+// Jump height always comes from impulse-momentum (Imp-Mom). The inches column
+// is used when present; a [cm] Imp-Mom column is converted. Flight Time is never used.
+function pickValdJumpHeightColumn(keys) {
+  const find = (method, unit) => keys.find(k => k.startsWith(`Jump Height (${method})`) && k.endsWith(`[${unit}]`));
+  const options = [
+    { method: 'Imp-Mom', unit: 'in', toInches: 1 },
+    { method: 'Imp-Mom', unit: 'cm', toInches: 1 / 2.54 },
+  ];
+  for (const o of options) {
+    const key = find(o.method, o.unit);
+    if (key) return { key, method: o.method, toInches: o.toInches };
+  }
+  return null;
+}
+
+// Blank VALD cells are missing data, never 0.
+function numOrNull(v) {
+  const t = String(v ?? '').trim();
+  if (t === '') return null;
+  const n = parseFloat(t.replace(/[%,]/g, ''));
+  return isNaN(n) ? null : n;
+}
+
+// N/kg -> % body weight, the unit the Page 3 reference values use.
+function nPerKgToPctBw(v) {
+  return v === null ? null : v * 100 / 9.81;
+}
+
+// "2:56 PM" -> "14:56:00" so same-day tests sort correctly.
+function to24HourTime(t) {
+  const m = String(t || '').trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp])[Mm]$/);
+  if (!m) return String(t || '').trim();
+  let h = parseInt(m[1], 10) % 12;
+  if (m[4].toUpperCase() === 'P') h += 12;
+  return `${String(h).padStart(2, '0')}:${m[2]}:${m[3] || '00'}`;
+}
+
+function parseValdCmjRows(rawRows) {
+  const src = rawRows.map(normalizeRowKeys);
+  const jh = pickValdJumpHeightColumn(Object.keys(src[0] || {}));
+  const { start, end } = getForceDateBounds();
+  const excludeSet = getExcludeSet('forceExcludeNames');
+  const dateFormat = detectHawkinDateFormat(src, 'DMY');
+  const rows = [];
+  for (const r of src) {
+    // Standard CMJ only: ABCMJ (arm swing) and every other test type are dropped.
+    if (String(r['Test Type'] || '').trim() !== 'CMJ') continue;
+    const dt = parseHawkinDateTime(r['Date'], to24HourTime(r['Time']), dateFormat);
+    if (!dt) continue;
+    if (start && dt.date < start) continue;
+    if (end && dt.date > end) continue;
+    const name = cleanName(r['Name']);
+    if (!name || excludeSet.has(name.toLowerCase())) continue;
+    const height = jh ? numOrNull(r[jh.key]) : null;
+    rows.push({
+      name,
+      date: dt.date,
+      sortKey: dt.sortKey,
+      segment: 'CMJ',
+      standard: true,
+      jumpHeight: height === null ? null : height * jh.toInches,
+      peakPower: numOrNull(r[VALD_COLUMNS.peakPower]),
+      mrsi: numOrNull(r[VALD_COLUMNS.mrsi]),
+      propForce: nPerKgToPctBw(numOrNull(r[VALD_COLUMNS.propForce])),
+      propVelocity: numOrNull(r[VALD_COLUMNS.propVelocity]),
+      brakeForce: nPerKgToPctBw(numOrNull(r[VALD_COLUMNS.brakeForce])),
+      brakeVelocity: numOrNull(r[VALD_COLUMNS.brakeVelocity]),
     });
   }
   rows.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
@@ -2006,6 +2120,13 @@ function isStandardCmjSegment(segment) {
 function cmjForceVelocityFieldsPresent(rawRows) {
   const sample = rawRows && rawRows[0];
   if (!sample) return { propulsive: false, braking: false };
+  if (detectForceSource(rawRows) === 'vald') {
+    const keys = Object.keys(sample).map(normCsvKey);
+    return {
+      propulsive: keys.includes(VALD_COLUMNS.propForce) && keys.includes(VALD_COLUMNS.propVelocity),
+      braking: keys.includes(VALD_COLUMNS.brakeForce) && keys.includes(VALD_COLUMNS.brakeVelocity),
+    };
+  }
   return {
     propulsive: ('Avg. Relative Propulsive Force' in sample) && ('Avg. Propulsive Velocity' in sample),
     braking: ('Avg. Relative Braking Force' in sample) && ('Avg. Braking Velocity' in sample),
@@ -2148,10 +2269,81 @@ function populateForceAthleteSelect(names) {
 
 /* ---- CMJ Team views ---- */
 const CMJ_METRIC_META = {
-  jumpHeight: { label: 'Jump Height', fmt: (v) => `${v.toFixed(1)}"`, decimals: 1 },
-  peakPower:  { label: 'Peak Power Score (W/kg)', fmt: (v) => v.toFixed(1), decimals: 1 },
-  mrsi:       { label: 'Movement Efficiency Score (mRSI)', fmt: (v) => v.toFixed(2), decimals: 2 },
+  jumpHeight: { fmt: (v) => `${v.toFixed(1)}"`, decimals: 1 },
+  peakPower:  { fmt: (v) => v.toFixed(1), decimals: 1 },
+  mrsi:       { fmt: (v) => v.toFixed(2), decimals: 2 },
 };
+
+// Every metric name the CMJ report shows, by data source. Hawkin keeps the
+// report's original wording; VALD uses ForceDecks terminology so the names match
+// what the coach sees in ForceDecks. LEAD's branded names are shared by both.
+const CMJ_BRANDED_LABELS = {
+  jumpHeight: 'Jump Height',
+  peakPower: 'Peak Power Score',
+  mrsi: 'Movement Efficiency Score',
+  powerUnit: 'W/kg',
+};
+const CMJ_SOURCE_LABELS = {
+  hawkin: {
+    branded: CMJ_BRANDED_LABELS,
+    subtitleSource: 'Hawkin Dynamics CMJ',
+    detected: 'Detected: Hawkin Dynamics export',
+    findThisIn: 'Locate in Hawkin Cloud: Select Athlete → Tests → Export Tests',
+    glossary: {
+      jumpHeight: 'Jump Height',
+      peakPower: 'Peak Relative Propulsive Power (W/kg)',
+      mrsi: 'Modified Reactive Strength Index (mRSI)',
+    },
+    mrsiDenominator: 'time to takeoff',
+    metric: {
+      jumpHeight: 'Jump Height',
+      peakPower: 'Peak Power Score (W/kg)',
+      mrsi: 'Movement Efficiency Score (mRSI)',
+    },
+    mrsiUnit: 'mRSI',
+    gasSubtitle: 'Propulsive phase, Avg. Relative Propulsive Force vs. Avg. Propulsive Velocity',
+    brakesSubtitle: 'Eccentric phase, Avg. Relative Braking Force vs. Avg. Braking Speed',
+    forceUnit: 'pctBw',
+    page3Footnote: '',
+    page3ChartHeight: 198,
+  },
+  vald: {
+    branded: CMJ_BRANDED_LABELS,
+    subtitleSource: 'VALD ForceDecks CMJ',
+    detected: 'Detected: VALD ForceDecks export',
+    findThisIn: 'Locate in ForceDecks: Tests → filter CMJ → Export CSV. Include: Jump Height (Imp-Mom) in Inches, Peak Power / BM, RSI-modified, Concentric Mean Force / BM, Concentric Mean Velocity, Eccentric Deceleration Mean Force / BM, Eccentric Deceleration Mean Velocity.',
+    glossary: {
+      jumpHeight: 'Jump Height (Imp-Mom)',
+      peakPower: 'Peak Power / BM (W/kg)',
+      mrsi: 'RSI-modified (RSImod)',
+    },
+    mrsiDenominator: 'contraction time',
+    metric: {
+      jumpHeight: 'Jump Height',
+      peakPower: 'Peak Power Score (Peak Power / BM, W/kg)',
+      mrsi: 'Movement Efficiency Score (RSImod)',
+    },
+    mrsiUnit: 'RSImod',
+    gasSubtitle: 'Concentric phase, Concentric Mean Force / BM vs. Concentric Mean Velocity',
+    brakesSubtitle: 'Eccentric deceleration phase, Eccentric Deceleration Mean Force / BM vs. Eccentric Deceleration Mean Velocity',
+    forceUnit: 'nPerKg',
+    // Shorter charts so VALD's longer subtitles and the footnote still fit on page 2.
+    page3ChartHeight: 172,
+    page3Footnote: 'Profile reference values are built from Hawkin Dynamics data. VALD values are converted to matching units; small systematic differences between platforms are expected.',
+  },
+};
+
+function cmjSource() {
+  return (forceData && forceData.source) || 'hawkin';
+}
+
+function cmjLabels() {
+  return CMJ_SOURCE_LABELS[cmjSource()];
+}
+
+function cmjMetricLabel(key) {
+  return cmjLabels().metric[key];
+}
 
 // Classifies a delta as up/down/flat using the SAME rounding precision as its
 // display formatter, so a delta that rounds to "0.0" can never be colored as
@@ -2227,7 +2419,7 @@ function renderCmjTop5(parsedRows, athleteName) {
     if (!rowsHtml) rowsHtml = '<tr><td class="nm" style="color:var(--gray);">No data</td></tr>';
     html += `<div class="cmj-top5-col">
       <div class="s-card">
-        <div class="s-card-head"><span class="name">${meta.label}</span></div>
+        <div class="s-card-head"><span class="name">${cmjMetricLabel(key)}</span></div>
         <div class="s-card-body"><table class="top5"><tbody>${rowsHtml}</tbody></table></div>
       </div>
     </div>`;
@@ -2311,11 +2503,11 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
   html += '</tbody>';
   document.getElementById('rosterTable').innerHTML = html;
 
-  document.getElementById('outSubtitle').textContent = `Team Summary  //  Ranked by Current ${meta.label} (Highest First)`;
+  document.getElementById('outSubtitle').textContent = `Team Summary  //  Ranked by Current ${cmjMetricLabel(metricKey)} (Highest First)`;
   document.getElementById('footnote').textContent =
     'Ranked by most recent test day, highest first. "Change" compares the most recent test to each athlete\u2019s first test on file; athletes with only one test show no change value. Where several jumps were logged on one day, the best attempt is used.';
 
-  const glossary = CMJ_METRIC_GLOSSARY[metricKey];
+  const glossary = cmjGlossaryEntry(metricKey);
   const metricNoteEl = document.getElementById('cmjMetricFootnote');
   if (glossary) {
     metricNoteEl.innerHTML = `<b>${glossary.label}:</b> ${glossary.text}`;
@@ -2366,7 +2558,7 @@ function renderCmjTeamReport() {
     // which is hidden in Team Report mode, so writing there would be silent.
     document.getElementById('reportContent').style.display = 'none';
     document.getElementById('emptyState').textContent =
-      'No usable rows found in this file - check that it\u2019s a Hawkin Dynamics CMJ export.';
+      'No usable rows found in this file - check that it\u2019s a Hawkin Dynamics or VALD ForceDecks CMJ export.';
     document.getElementById('emptyState').style.display = 'block';
     return;
   }
@@ -2413,20 +2605,18 @@ const CMJ_IMPROVEMENT_NOTES = {
 };
 
 // What each metric actually is, in plain language for athletes and parents.
-const CMJ_METRIC_GLOSSARY = {
-  jumpHeight: {
-    label: 'Jump Height',
-    text: 'The goal you aim for when you actually test, conducted with your hands on your hips to standardize jumping strategy. This is the outcome, not what you train directly; it rises as the other two metrics improve.',
-  },
-  peakPower: {
-    label: 'Peak Relative Propulsive Power (W/kg)',
-    text: 'The Power (W) an athlete generates for their size (kg) during push-off. The score is relative to body weight, which levels the field, so smaller athletes aren’t unfairly compared to bigger ones. Gains here show up as better jump height, a quicker first step, and faster acceleration overall.',
-  },
-  mrsi: {
-    label: 'Modified Reactive Strength Index (mRSI)',
-    text: 'This ratio is jump height divided by time to takeoff; it’s a measure of how quickly the athlete converts their countermovement into an explosive jump. A higher value means a greater output in less time, reflecting better reactive/elastic qualities: the gap between being strong and being able to express that strength fast.',
-  },
+// Names come from the active label set (cmjLabels); only the mRSI definition
+// differs by source (VALD divides by contraction time, Hawkin by time to takeoff).
+const CMJ_GLOSSARY_TEXT = {
+  jumpHeight: () => 'The goal you aim for when you actually test, conducted with your hands on your hips to standardize jumping strategy. This is the outcome, not what you train directly; it rises as the other two metrics improve.',
+  peakPower: () => 'The Power (W) an athlete generates for their size (kg) during push-off. The score is relative to body weight, which levels the field, so smaller athletes aren’t unfairly compared to bigger ones. Gains here show up as better jump height, a quicker first step, and faster acceleration overall.',
+  mrsi: (L) => `This ratio is jump height divided by ${L.mrsiDenominator}; it’s a measure of how quickly the athlete converts their countermovement into an explosive jump. A higher value means a greater output in less time, reflecting better reactive/elastic qualities: the gap between being strong and being able to express that strength fast.`,
 };
+
+function cmjGlossaryEntry(key) {
+  const L = cmjLabels();
+  return { label: L.glossary[key], text: CMJ_GLOSSARY_TEXT[key](L) };
+}
 
 function improvementBandFor(tier) {
   if (tier === 'Recreational' || tier === 'JV') return 'foundation';
@@ -2479,7 +2669,7 @@ function buildCmjNotes(metricStates, focusInfo) {
 function buildCmjGlossary() {
   let rows = '';
   for (const key of ['jumpHeight', 'peakPower', 'mrsi']) {
-    const g = CMJ_METRIC_GLOSSARY[key];
+    const g = cmjGlossaryEntry(key);
     rows += `<div class="metric-note"><b>${g.label}:</b> ${g.text}</div>`;
   }
   return rows;
@@ -2580,7 +2770,7 @@ function buildCmjFvLegend() {
 // athlete's sex — the crosshair and average marker are simply omitted.
 function buildCmjQuadrantChart(opts) {
   const { athleteX, athleteY, avgX, avgY, xMin, xMax, yMin, yMax, xFmt, yFmt, quadrantLabels } = opts;
-  const W = 320, H = 198, padL = 40, padR = 12, padT = 14, padB = 30;
+  const W = 320, H = opts.height || 198, padL = 40, padR = 12, padT = 14, padB = 30;
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
   const xFor = (v) => padL + ((v - xMin) / (xMax - xMin)) * plotW;
@@ -2640,16 +2830,25 @@ function buildCmjForceVelocitySection(fvRows, fieldsPresent, sex) {
   let gasQuadrant = null;
   let brakesQuadrant = null;
 
-  const fmtForce = (v) => `${Math.round(v)}% BW`;
+  // Quadrants are always classified in % BW (the reference values' unit). VALD
+  // force values are shown back in ForceDecks' own N/kg, display only.
+  const L = cmjLabels();
+  const fmtForce = L.forceUnit === 'nPerKg'
+    ? (v) => `${(v * 9.81 / 100).toFixed(1)} N/kg`
+    : (v) => `${Math.round(v)}% BW`;
   const fmtVel = (v) => `${v.toFixed(2)} m/s`;
 
+  // A blank cell (VALD) drops that test from the one chart that needs it only.
+  const gasRows = fvRows.filter(r => r.propForce !== null && r.propVelocity !== null);
+  const brakeRows = fvRows.filter(r => r.brakeForce !== null && r.brakeVelocity !== null);
+
   // The Gas
-  if (!fieldsPresent.propulsive) {
+  if (!fieldsPresent.propulsive || !gasRows.length) {
     html += `<div class="cmj-fv-col">${buildCmjFvCard('The Gas', '<div class="cmj-fv-missing">Propulsive data not available in this export.</div>')}</div>`;
   } else {
-    const avgForce = last5Avg(fvRows.map(r => r.propForce));
-    const avgVel = last5Avg(fvRows.map(r => r.propVelocity));
-    let body = `<div class="cmj-fv-sub">Propulsive phase, Avg. Relative Propulsive Force vs. Avg. Propulsive Velocity</div>`;
+    const avgForce = last5Avg(gasRows.map(r => r.propForce));
+    const avgVel = last5Avg(gasRows.map(r => r.propVelocity));
+    let body = `<div class="cmj-fv-sub">${L.gasSubtitle}</div>`;
     if (norms) {
       const m = norms.metrics;
       gasQuadrant = classifyGasQuadrant(avgForce, avgVel, m.avg_relative_propulsive_force_pct_bw.mean, m.avg_propulsive_velocity_mps.mean);
@@ -2659,7 +2858,7 @@ function buildCmjForceVelocitySection(fvRows, fieldsPresent, sex) {
         athleteX: avgForce, athleteY: avgVel,
         avgX: m.avg_relative_propulsive_force_pct_bw.mean, avgY: m.avg_propulsive_velocity_mps.mean,
         xMin: xRange.min, xMax: xRange.max, yMin: yRange.min, yMax: yRange.max,
-        xFmt: fmtForce, yFmt: fmtVel,
+        xFmt: fmtForce, yFmt: fmtVel, height: L.page3ChartHeight,
         quadrantLabels: { topLeft: CMJ_GAS_QUADRANT_LABELS.velocityDominant, topRight: CMJ_GAS_QUADRANT_LABELS.wellRounded, bottomLeft: CMJ_GAS_QUADRANT_LABELS.underdeveloped, bottomRight: CMJ_GAS_QUADRANT_LABELS.forceDominant },
       });
       body += buildCmjFvLegend();
@@ -2671,7 +2870,7 @@ function buildCmjForceVelocitySection(fvRows, fieldsPresent, sex) {
       body += buildCmjQuadrantChart({
         athleteX: avgForce, athleteY: avgVel, avgX: null, avgY: null,
         xMin: xRange.min, xMax: xRange.max, yMin: yRange.min, yMax: yRange.max,
-        xFmt: fmtForce, yFmt: fmtVel,
+        xFmt: fmtForce, yFmt: fmtVel, height: L.page3ChartHeight,
         quadrantLabels: { topLeft: CMJ_GAS_QUADRANT_LABELS.velocityDominant, topRight: CMJ_GAS_QUADRANT_LABELS.wellRounded, bottomLeft: CMJ_GAS_QUADRANT_LABELS.underdeveloped, bottomRight: CMJ_GAS_QUADRANT_LABELS.forceDominant },
       });
       body += `<div class="cmj-fv-missing">Team average not available for this athlete's roster group.</div>`;
@@ -2680,12 +2879,12 @@ function buildCmjForceVelocitySection(fvRows, fieldsPresent, sex) {
   }
 
   // The Brakes
-  if (!fieldsPresent.braking) {
+  if (!fieldsPresent.braking || !brakeRows.length) {
     html += `<div class="cmj-fv-col">${buildCmjFvCard('The Brakes', '<div class="cmj-fv-missing">Braking data not available in this export.</div>')}</div>`;
   } else {
-    const avgForce = last5Avg(fvRows.map(r => r.brakeForce));
-    const avgSpeed = last5Avg(fvRows.map(r => Math.abs(r.brakeVelocity)));
-    let body = `<div class="cmj-fv-sub">Eccentric phase, Avg. Relative Braking Force vs. Avg. Braking Speed</div>`;
+    const avgForce = last5Avg(brakeRows.map(r => r.brakeForce));
+    const avgSpeed = last5Avg(brakeRows.map(r => Math.abs(r.brakeVelocity)));
+    let body = `<div class="cmj-fv-sub">${L.brakesSubtitle}</div>`;
     if (norms) {
       const m = norms.metrics;
       brakesQuadrant = classifyBrakesQuadrant(avgForce, avgSpeed, m.avg_relative_braking_force_pct_bw.mean, m.avg_braking_speed_mps.mean);
@@ -2695,7 +2894,7 @@ function buildCmjForceVelocitySection(fvRows, fieldsPresent, sex) {
         athleteX: avgForce, athleteY: avgSpeed,
         avgX: m.avg_relative_braking_force_pct_bw.mean, avgY: m.avg_braking_speed_mps.mean,
         xMin: xRange.min, xMax: xRange.max, yMin: yRange.min, yMax: yRange.max,
-        xFmt: fmtForce, yFmt: fmtVel,
+        xFmt: fmtForce, yFmt: fmtVel, height: L.page3ChartHeight,
         quadrantLabels: { topLeft: CMJ_BRAKES_QUADRANT_LABELS.fastLowForce, topRight: CMJ_BRAKES_QUADRANT_LABELS.fastForceful, bottomLeft: CMJ_BRAKES_QUADRANT_LABELS.slowLight, bottomRight: CMJ_BRAKES_QUADRANT_LABELS.slowForceful },
       });
       body += buildCmjFvLegend();
@@ -2707,7 +2906,7 @@ function buildCmjForceVelocitySection(fvRows, fieldsPresent, sex) {
       body += buildCmjQuadrantChart({
         athleteX: avgForce, athleteY: avgSpeed, avgX: null, avgY: null,
         xMin: xRange.min, xMax: xRange.max, yMin: yRange.min, yMax: yRange.max,
-        xFmt: fmtForce, yFmt: fmtVel,
+        xFmt: fmtForce, yFmt: fmtVel, height: L.page3ChartHeight,
         quadrantLabels: { topLeft: CMJ_BRAKES_QUADRANT_LABELS.fastLowForce, topRight: CMJ_BRAKES_QUADRANT_LABELS.fastForceful, bottomLeft: CMJ_BRAKES_QUADRANT_LABELS.slowLight, bottomRight: CMJ_BRAKES_QUADRANT_LABELS.slowForceful },
       });
       body += `<div class="cmj-fv-missing">Team average not available for this athlete's roster group.</div>`;
@@ -2716,6 +2915,7 @@ function buildCmjForceVelocitySection(fvRows, fieldsPresent, sex) {
   }
 
   html += '</div>';
+  if (L.page3Footnote) html += `<div class="cmj-notes-footnote cmj-fv-footnote">${L.page3Footnote}</div>`;
   return { html, gasQuadrant, brakesQuadrant };
 }
 
@@ -2734,7 +2934,7 @@ function buildCmjHistory(metricSeries) {
     html += `
       <div class="cmj-hist-section">
         <div class="cmj-hist-card">
-          <div class="cmj-hist-head">${meta.label}</div>
+          <div class="cmj-hist-head">${cmjMetricLabel(m.key)}</div>
           <div class="cmj-hist-body">
             <div class="cmj-hist-hero">
               <div class="k">${meta.fmt(avg5)}</div>
@@ -2765,7 +2965,7 @@ function buildCmjHistory(metricSeries) {
 function renderCmjReport() {
   const parsedRows = parseCmjRows(forceData.rows);
   if (!parsedRows.length) {
-    document.getElementById('cmjPreviewNote').textContent = 'No usable rows found in this file - check that it\u2019s a Hawkin Dynamics CMJ export.';
+    document.getElementById('cmjPreviewNote').textContent = 'No usable rows found in this file - check that it\u2019s a Hawkin Dynamics or VALD ForceDecks CMJ export.';
     document.getElementById('cmjMetricsGrid').innerHTML = '';
     document.getElementById('cmjNotesBody').innerHTML = '';
     document.getElementById('forceAthleteField').style.display = 'none';
@@ -2800,17 +3000,20 @@ function renderCmjReport() {
   // them through a cm->inches conversion produced unrealistic ~8-9" figures).
   // No conversion applied here — flag if your Hawkin account is actually
   // configured to export in cm, and I'll switch this back on.
-  const jumpAll = rows.map(r => r.jumpHeight);
-  const jump20 = last20.map(r => ({ date: r.date, value: r.jumpHeight }));
-  const powerAll = rows.map(r => r.peakPower);
-  const power20 = last20.map(r => ({ date: r.date, value: r.peakPower }));
-  const mrsiAll = rows.map(r => r.mrsi);
-  const mrsi20 = last20.map(r => ({ date: r.date, value: r.mrsi }));
+  // VALD blanks arrive as null and are skipped per metric; Hawkin never produces null.
+  const present = (v) => v !== null;
+  const jumpAll = rows.map(r => r.jumpHeight).filter(present);
+  const jump20 = last20.map(r => ({ date: r.date, value: r.jumpHeight })).filter(p => present(p.value));
+  const powerAll = rows.map(r => r.peakPower).filter(present);
+  const power20 = last20.map(r => ({ date: r.date, value: r.peakPower })).filter(p => present(p.value));
+  const mrsiAll = rows.map(r => r.mrsi).filter(present);
+  const mrsi20 = last20.map(r => ({ date: r.date, value: r.mrsi })).filter(p => present(p.value));
 
+  const L = cmjLabels();
   document.getElementById('cmjMetricsGrid').innerHTML =
-    cmjMetricSection('Jump Height', jumpAll, jump20, fmtIn, 'jumpHeight') +
-    cmjMetricSection('Peak Power Score', powerAll, power20, fmtWkg, 'peakPower', 'W/kg') +
-    cmjMetricSection('Movement Efficiency Score', mrsiAll, mrsi20, fmtMrsi, 'mrsi', 'mRSI');
+    cmjMetricSection(L.branded.jumpHeight, jumpAll, jump20, fmtIn, 'jumpHeight') +
+    cmjMetricSection(L.branded.peakPower, powerAll, power20, fmtWkg, 'peakPower', L.branded.powerUnit) +
+    cmjMetricSection(L.branded.mrsi, mrsiAll, mrsi20, fmtMrsi, 'mrsi', L.mrsiUnit);
 
   const metricStates = [
     { key: 'jumpHeight', avg5: last5Avg(jumpAll) },
@@ -2823,7 +3026,7 @@ function renderCmjReport() {
   // best attempt per day) rather than `rows` above, since arm-swing and
   // combo segments would skew the force/velocity relationship if mixed in.
   const fvFieldsPresent = cmjForceVelocityFieldsPresent(forceData.rows);
-  const standardAthleteRows = athleteRows.filter(r => isStandardCmjSegment(r.segment));
+  const standardAthleteRows = athleteRows.filter(r => r.standard);
   const fvRows = condenseToDailyBest(standardAthleteRows);
   const fvAvailable = (fvFieldsPresent.propulsive || fvFieldsPresent.braking) && fvRows.length > 0;
   let focusInfo = { available: false, gasQuadrant: null, brakesQuadrant: null };
@@ -2834,6 +3037,7 @@ function renderCmjReport() {
     document.getElementById('cmjPage3Subtitle').textContent = `${athleteName}  //  The Gas & The Brakes`;
     focusInfo = { available: true, gasQuadrant: fv.gasQuadrant, brakesQuadrant: fv.brakesQuadrant };
   } else {
+    document.getElementById('cmjPage3Body').innerHTML = '';
     document.getElementById('cmjPage3').style.display = 'none';
   }
 
@@ -2855,7 +3059,7 @@ function renderCmjReport() {
 
   document.getElementById('outTeam').textContent = athleteName;
   document.getElementById('outTitle').textContent = document.getElementById('reportTitle').value || 'CMJ Profile Report';
-  document.getElementById('outSubtitle').textContent = 'Individual Athlete Report  //  Hawkin Dynamics CMJ';
+  document.getElementById('outSubtitle').textContent = `Individual Athlete Report  //  ${L.subtitleSource}`;
   document.getElementById('outMeta').textContent = `${rows.length} test day${rows.length > 1 ? 's' : ''} on file - ${fmtDateLong(rows[0].date)} to ${fmtDateLong(rows[rows.length - 1].date)}`;
   document.getElementById('footTeam').textContent = `${athleteName} CMJ Profile Report`;
   document.getElementById('footnote').textContent = '';
@@ -3011,8 +3215,14 @@ function render() {
   document.getElementById('cmjMetricFootnote').style.display = 'none';
 
   if (currentReportType === 'force') {
+    if (forceData && forceData.source === 'vald' && !forceData.jumpHeightMethod) {
+      document.getElementById('emptyState').textContent = 'This VALD export has no Jump Height (Imp-Mom) column. Re-export from ForceDecks with Jump Height (Imp-Mom) in Inches included.';
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('reportContent').style.display = 'none';
+      return;
+    }
     if (!forceData) {
-      document.getElementById('emptyState').textContent = 'Drop a Hawkin Dynamics CMJ export CSV to generate a report preview.';
+      document.getElementById('emptyState').textContent = 'Drop a Hawkin Dynamics or VALD ForceDecks CMJ export CSV to generate a report preview.';
       document.getElementById('emptyState').style.display = 'block';
       document.getElementById('reportContent').style.display = 'none';
       return;
@@ -3175,15 +3385,21 @@ function setupDropzone(dzId, fileInputId, fileLabelId, onLoaded, expectedCategor
 // producing an empty/garbled report. Each export format's columns are
 // distinctive enough that this never needs to guess:
 //   Force (Hawkin CMJ): has "Jump Height" and "Segment"
+//   Force (VALD ForceDecks CMJ): has "Test Type", "Reps" and a "Jump Height..." column
 //   Speed (Lumin wide export): has "Athlete", "Test", and "Metric"
 //   Training Summary (Lumin session export): has "Athlete" and "Sessions Assigned"
 function sniffCsvReportType(rows) {
   if (!rows || !rows.length) return null;
-  const keys = Object.keys(rows[0]);
+  // Matched on trimmed, BOM-free names (VALD headers carry trailing spaces).
+  const rawKeys = Object.keys(rows[0]);
+  const keys = rawKeys.map(normCsvKey);
   const has = (k) => keys.includes(k);
 
+  if (isValdCmjHeaders(keys)) {
+    return { category: 'force_category', subtype: 'force', source: 'vald' };
+  }
   if (has('Jump Height') && has('Segment')) {
-    return { category: 'force_category', subtype: 'force' };
+    return { category: 'force_category', subtype: 'force', source: 'hawkin' };
   }
   if (has('Athlete') && has('Test') && has('Metric')) {
     // Lumin's export includes a row for every test type an athlete is
@@ -3191,7 +3407,7 @@ function sniffCsvReportType(rows) {
     // value column blank) — matching on Test name alone would misdetect a
     // roster's untested test type as the real one. Require an actual value
     // in at least one date column before counting a test as present.
-    const dateKeys = keys.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k));
+    const dateKeys = rawKeys.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(normCsvKey(k)));
     const hasData = (testName) => rows.some(r => {
       if (String(r['Test'] || '').trim().toLowerCase() !== testName) return false;
       return dateKeys.some(k => String(r[k] ?? '').trim() !== '');
@@ -3244,7 +3460,13 @@ function loadSpeedData(data) {
 }
 
 function loadForceData(data) {
+  data.source = detectForceSource(data.rows);
+  if (data.source === 'vald') {
+    const jh = pickValdJumpHeightColumn(Object.keys(data.rows[0] || {}).map(normCsvKey));
+    data.jumpHeightMethod = jh ? jh.method : null;
+  }
   forceData = data;
+  updateForceSourceUi();
   // Clear any prior filter before scanning, so the range reflects the whole
   // new file rather than being constrained by the last file's dates.
   document.getElementById('forceStartDate').value = '';
@@ -3257,6 +3479,15 @@ function loadForceData(data) {
   // A new file means a new roster — let the name auto-fill again.
   teamNameTouched = false;
   render();
+}
+
+// "Find this in" and the Detected label follow the loaded file's source.
+function updateForceSourceUi() {
+  const L = cmjLabels();
+  document.getElementById('forceFindThisIn').textContent = L.findThisIn;
+  const tag = document.getElementById('forceSourceLabel');
+  tag.textContent = forceData ? L.detected : '';
+  tag.style.display = forceData ? 'block' : 'none';
 }
 
 function routeDetectedData(data, detected) {
