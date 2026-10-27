@@ -398,11 +398,16 @@
   .lr-flag {
     display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 3px;
     font-size: 8.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
-    vertical-align: 1px; color: #FFFFFF;
+    vertical-align: 1px; color: #111111;
   }
-  .lr-flag.green { background: #3E7B3F; }
-  .lr-flag.yellow { background: #D4A72C; color: #111111; }
-  .lr-flag.red { background: #A33A2F; }
+  .lr-flag.green { background: #4caf51; }
+  .lr-flag.yellow { background: #ffeb3a; }
+  .lr-flag.red { background: #f44336; }
+  /* IMTP athlete asymmetry stat box: standard box with a flag-colored outline
+     inside its edges, 2px to match the printed chart line */
+  .stat-box.lr-box.green { box-shadow: inset 0 0 0 2px #4caf51; }
+  .stat-box.lr-box.yellow { box-shadow: inset 0 0 0 2px #ffeb3a; }
+  .stat-box.lr-box.red { box-shadow: inset 0 0 0 2px #f44336; }
   .sub { display: block; font-size: 9.5px; color: var(--gray); font-weight: 500; }
   .delta-cell.up { color: #3E7B3F; font-weight: 700; }
   .delta-cell.down { color: #A33A2F; font-weight: 700; }
@@ -1637,6 +1642,11 @@ function sparklineBig(points, opts = {}) {
   const W = 680, H = 190, padX = 30, padY = 26, bottomLabelSpace = 22;
   const values = points.map(p => p.value);
   let minV = Math.min(...values), maxV = Math.max(...values);
+  // opts.minSpan: smallest y-range shown, so tiny changes stay visually small.
+  if (opts.minSpan && maxV - minV < opts.minSpan) {
+    const mid = (minV + maxV) / 2;
+    minV = mid - opts.minSpan / 2; maxV = mid + opts.minSpan / 2;
+  }
   if (minV === maxV) { minV -= 0.05; maxV += 0.05; }
   const n = points.length;
   const xStep = n > 1 ? (W - 2 * padX) / (n - 1) : 0;
@@ -1655,7 +1665,7 @@ function sparklineBig(points, opts = {}) {
     const r = isLast ? 5 : 3.2;
     const dotColor = isLast ? 'var(--accent)' : 'var(--accent-dark)';
     dots += `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${r}" style="fill:${dotColor};" />`;
-    labels += `<text x="${c.x.toFixed(1)}" y="${(c.y - 11).toFixed(1)}" text-anchor="middle" style="font-family:'Barlow SC';font-size:11px;font-weight:700;fill:var(--black);">${c.p.value.toFixed(2)}</text>`;
+    labels += `<text x="${c.x.toFixed(1)}" y="${(c.y - 11).toFixed(1)}" text-anchor="middle" style="font-family:'Barlow SC';font-size:11px;font-weight:700;fill:var(--black);">${opts.formatValue ? opts.formatValue(c.p.value) : c.p.value.toFixed(2)}</text>`;
     labels += `<text x="${c.x.toFixed(1)}" y="${H - 6}" text-anchor="middle" style="font-family:'Barlow SC';font-size:9.5px;fill:var(--gray);">${fmtDateShort(c.p.date)}</text>`;
   });
   const line = n > 1
@@ -3253,8 +3263,8 @@ function imtpDailyBest(rows) {
 // never shown with a yellow flag.
 function imtpLrFlag(lr) {
   const a = Math.abs(Number(lr.toFixed(1)));
-  if (a >= 15) return { cls: 'red', label: 'Red Flag' };
-  if (a >= 9) return { cls: 'yellow', label: 'Yellow Flag' };
+  if (a >= 15) return { cls: 'red', label: 'Injury Risk' };
+  if (a >= 9) return { cls: 'yellow', label: 'Monitor' };
   return { cls: 'green', label: 'Balanced' };
 }
 
@@ -3274,8 +3284,12 @@ function imtpLrCell(lr) {
 const fmtNewtons = (v) => (v === null ? '-' : `${Math.round(v).toLocaleString('en-US')} N`);
 const fmtXbw = (v) => (v === null ? '-' : `${v.toFixed(2)} xBW`);
 
-const IMTP_LR_FOOTNOTE = 'L|R Peak Force: a positive value means a bias toward the left leg, a negative value toward the right leg (shown as L or R). Under 9% is balanced (green), 9-15% is a yellow flag, 15% or more is a red flag for increased injury risk.';
-const IMTP_METHOD_NOTE = 'Mid-Thigh Pull trials only. Where several pulls were logged on one day, the pull with the highest Peak Force is used.';
+const IMTP_LR_FOOTNOTE = 'L|R Peak Force: 15% or greater is a red flag for increased injury risk.';
+const IMTP_METHOD_NOTE = 'Isometric Mid-Thigh Pull tests only. Where several pulls were logged on one day, the pull with the highest Peak Force is used.';
+const NEWTONS_PER_LBF = 4.4482216;
+// Relative Peak Force chart: the y-axis always spans at least 20 % BW, so a
+// 1% (0.01 xBW) change looks marginal and a 10% (0.10 xBW) change fills about half.
+const IMTP_REL_CHART_MIN_SPAN = 20;
 
 function buildImtpAthletes(parsedRows) {
   const byAthlete = new Map();
@@ -3350,10 +3364,10 @@ function renderImtpAthlete(athlete, shownName) {
   const latest = athlete.latest;
   const flag = latest.lr === null ? null : imtpLrFlag(latest.lr);
   document.getElementById('statStrip').innerHTML = `
-    <div class="stat-box"><div class="num">${fmtNewtons(latest.systemWeight)}</div><div class="label">System Weight</div></div>
+    <div class="stat-box"><div class="num">${latest.systemWeight === null ? '-' : `${Math.round(latest.systemWeight / NEWTONS_PER_LBF)} lbs`}</div><div class="label">Current Body Weight</div></div>
     <div class="stat-box"><div class="num">${fmtNewtons(latest.peakForce)}</div><div class="label">Peak Force</div></div>
     <div class="stat-box"><div class="num">${fmtXbw(latest.relPeak)}</div><div class="label">Relative Peak Force</div></div>
-    <div class="stat-box"><div class="num">${imtpLrText(latest.lr)}</div><div class="label">L|R Peak Force${flag ? `<span class="lr-flag ${flag.cls}">${flag.label}</span>` : ''}</div></div>
+    <div class="stat-box${flag ? ' lr-box ' + flag.cls : ''}"><div class="num">${imtpLrText(latest.lr)}</div><div class="label">Peak Force Asymmetry</div></div>
   `;
 
   const bestPeak = Math.max(...days.map(d => d.peakForce));
@@ -3377,19 +3391,19 @@ function renderImtpAthlete(athlete, shownName) {
   html += '</tbody>';
   document.getElementById('rosterTable').innerHTML = html;
 
-  document.getElementById('outSubtitle').textContent = `Individual Athlete Report  //  ${shownName}  //  Hawkin Dynamics IMTP`;
+  document.getElementById('outSubtitle').textContent = `Athlete Report  //  ${shownName}  //  Hawkin Isometric Mid-Thigh Pull`;
   document.getElementById('footnote').textContent = `${IMTP_METHOD_NOTE} ${IMTP_LR_FOOTNOTE}`;
 
-  const relPoints = days.filter(d => d.relPeak !== null).map(d => ({ date: d.date, value: d.relPeak }));
+  const relPoints = days.filter(d => d.relPeak !== null).map(d => ({ date: d.date, value: d.relPeak * 100 }));
   if (relPoints.length) {
     const cardsWrap = document.getElementById('speedCards');
     cardsWrap.style.display = 'flex';
     cardsWrap.innerHTML = `<div class="s-card wide">
         <div class="s-card-head">
-          <span class="name">Relative Peak Force (xBW) - Progress Over Time</span>
+          <span class="name">Relative Peak Force (% BW) - Progress Over Time</span>
           <span class="rank">${days.length} test day${days.length > 1 ? 's' : ''} on file</span>
         </div>
-        <div class="s-card-body">${sparklineBig(relPoints, { higherIsBetter: true })}</div>
+        <div class="s-card-body">${sparklineBig(relPoints, { higherIsBetter: true, minSpan: IMTP_REL_CHART_MIN_SPAN, formatValue: v => `${Math.round(v)}%` })}</div>
       </div>`;
   }
 }
@@ -3403,7 +3417,7 @@ function renderImtpTeam(athletes) {
     <div class="stat-box"><div class="num">${athletes.length}</div><div class="label">Athletes Tested</div></div>
     <div class="stat-box"><div class="num">${fmtXbw(avgRel)}</div><div class="label">Team Avg Relative Peak Force</div></div>
     <div class="stat-box"><div class="num">${leader ? fmtXbw(leader.latest.relPeak) : '-'}</div><div class="label">${leader ? 'Leader - ' + leader.Athlete : 'Leader'}</div></div>
-    <div class="stat-box"><div class="num">${flagged}</div><div class="label">L|R Flags (Yellow or Red)</div></div>
+    <div class="stat-box"><div class="num">${flagged}</div><div class="label">L|R Flags (Monitor or Injury Risk)</div></div>
   `;
 
   let html = `<thead><tr>
