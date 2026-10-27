@@ -111,6 +111,9 @@
     color: var(--black);
   }
   .option-box-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  /* Population sort: three equal buttons on one line, spanning the same width as the two above */
+  .team-sort-row { flex-wrap: nowrap; }
+  .team-sort-row .option-box { flex: 1 1 0; min-width: 0; padding: 14px 6px; }
   .option-box {
     position: relative;
     flex: 1 1 100px;
@@ -392,6 +395,14 @@
   .pct-good { color: #3E7B3F; font-weight: 700; }
   .pct-mid { color: var(--accent-dark); font-weight: 700; }
   .pct-low { color: #A33A2F; font-weight: 700; }
+  .lr-flag {
+    display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 3px;
+    font-size: 8.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
+    vertical-align: 1px; color: #FFFFFF;
+  }
+  .lr-flag.green { background: #3E7B3F; }
+  .lr-flag.yellow { background: #D4A72C; color: #111111; }
+  .lr-flag.red { background: #A33A2F; }
   .sub { display: block; font-size: 9.5px; color: var(--gray); font-weight: 500; }
   .delta-cell.up { color: #3E7B3F; font-weight: 700; }
   .delta-cell.down { color: #A33A2F; font-weight: 700; }
@@ -864,6 +875,24 @@
         Team Report
       </label>
     </div>
+    <div id="teamSortRow" style="display:none; margin-top:12px;">
+      <!-- Label sits in its own .field so the .field label style doesn't reach the option boxes -->
+      <div class="field" style="margin-bottom:0;"><label>Organize By</label></div>
+      <div class="option-box-row team-sort-row">
+        <label class="option-box">
+          <input type="radio" name="teamSort" value="alpha">
+          Last Name
+        </label>
+        <label class="option-box">
+          <input type="radio" name="teamSort" value="recent" checked>
+          Last Test
+        </label>
+        <label class="option-box">
+          <input type="radio" name="teamSort" value="bestEver">
+          Best Test
+        </label>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -1218,6 +1247,31 @@ const SPEED_TEST_NAMES = {
   speed30: '30 yard sprint',
   agility: '5-10-5 agility test',
 };
+// Other names coaches use for the same test in Lumin. Compared lowercase with
+// spaces collapsed, so capitalization and double spaces don't matter.
+const SPEED_TEST_ALIASES = {
+  speed10: [
+    '10 yard acceleration', '10 yard dash', '10 yard speed test', '10 yard sprint',
+    '10 yard sprint (1 yard build)', '10 yard', '10 yard time', '10 yard split',
+    '10 yard run', '10 yd dash', '10 yd sprint', '10 yard accel',
+  ],
+  speed30: [
+    '30 yard sprint', '30 yard dash', '30 yard speed test', '30 yard', '30 yard time',
+    '30 yard split', '30 yard run', '30 yard acceleration', '30 yard accel',
+  ],
+};
+
+function normSpeedTestName(name) {
+  return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+// True when a CSV "Test" value is the given canonical test (SPEED_TEST_NAMES value).
+function isSpeedTest(rawTest, testName) {
+  const test = normSpeedTestName(rawTest);
+  if (test === testName) return true;
+  const key = Object.keys(SPEED_TEST_NAMES).find(k => SPEED_TEST_NAMES[k] === testName);
+  return !!(key && SPEED_TEST_ALIASES[key] && SPEED_TEST_ALIASES[key].includes(test));
+}
 const SPEED_TEST_LABELS = {
   speed10: '10-Yard Acceleration',
   speed30: '30-Yard Sprint',
@@ -1232,6 +1286,7 @@ const REPORT_TITLES = {
   speed30: 'Speed Report – 30 Yard Sprint',
   agility: 'Speed Report – 5-10-5 Agility',
   force: 'CMJ Profile Report',
+  imtp: 'IMTP Report',
 };
 
 function toNum(v) {
@@ -1404,8 +1459,7 @@ function parseSpeedRows(rawRows, testName) {
   const { start, end } = getSpeedDateBounds();
   const out = [];
   for (const r of rawRows) {
-    const test = String(r['Test'] || '').trim().toLowerCase();
-    if (test !== testName) continue;
+    if (!isSpeedTest(r['Test'], testName)) continue;
     const name = cleanName(r['Athlete']);
     if (!name || excludeSet.has(name.toLowerCase())) continue;
 
@@ -1446,8 +1500,7 @@ function getUntestedSpeedAthletes(rawRows, testName) {
   const tested = new Set();
   const seen = new Set();
   for (const r of rawRows) {
-    const test = String(r['Test'] || '').trim().toLowerCase();
-    if (test !== testName) continue;
+    if (!isSpeedTest(r['Test'], testName)) continue;
     const name = cleanName(r['Athlete']);
     if (!name || excludeSet.has(name.toLowerCase())) continue;
     seen.add(name);
@@ -1468,6 +1521,52 @@ function rankSpeed(athletes) {
   const sorted = [...athletes].sort((a, b) => a.current - b.current || a.best - b.best);
   sorted.forEach((a, i) => a.Rank = i + 1);
   return sorted;
+}
+
+// Team list order (Population panel): "recent" (most recent test, the
+// default), "bestEver" (best test on file) or "alpha" (last name A-Z).
+// Leader / average stat boxes always use the most recent test.
+function getTeamSort() {
+  const el = document.querySelector('input[name="teamSort"]:checked');
+  return el ? el.value : 'recent';
+}
+
+function lastNameKey(name) {
+  const parts = String(name || '').trim().split(/\s+/);
+  return parts[parts.length - 1] || '';
+}
+
+function compareByLastName(a, b) {
+  return lastNameKey(a).localeCompare(lastNameKey(b), undefined, { sensitivity: 'base' }) ||
+    String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
+}
+
+// `athletes` arrive ranked by most recent test. For "bestEver" the list is
+// re-ranked by bestOf(a) (copies, so Rank badges match the new order); for
+// "alpha" the most-recent ranks are kept and only the order changes.
+function orderForTeamList(athletes, bestOf, higherIsBetter) {
+  const mode = getTeamSort();
+  if (mode === 'alpha') return [...athletes].sort((a, b) => compareByLastName(a.Athlete, b.Athlete));
+  if (mode !== 'bestEver') return athletes;
+  const val = a => { const v = bestOf(a); return Number.isFinite(v) ? v : null; };
+  return athletes
+    .map((a, i) => ({ a, i, v: val(a) }))
+    .sort((x, y) => (x.v === null) - (y.v === null) ||
+      (higherIsBetter ? y.v - x.v : x.v - y.v) || x.i - y.i)
+    .map(({ a }, i) => ({ ...a, Rank: i + 1 }));
+}
+
+// Rewrites a team subtitle ("...Ranked by Current X (Highest First)") for the
+// chosen list order.
+function teamSortSubtitle(text) {
+  const mode = getTeamSort();
+  if (mode === 'bestEver') return text.replace(/Ranked by (Current|Most Recent) /, 'Ranked by Best ');
+  if (mode === 'alpha') return text.replace(/ \((Fastest|Highest) First\)$/, '') + '\u00a0\u00a0//\u00a0\u00a0Listed A\u2013Z by Last Name';
+  return text;
+}
+
+function teamSortFootnote(text) {
+  return getTeamSort() === 'bestEver' ? text.replace(/^Ranked by most recent test (time|day)/, 'Ranked by best test on file') : text;
 }
 
 function fmtDateShort(iso) {
@@ -1534,7 +1633,7 @@ function sparkline(points, opts = {}) {
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${fill.defs}${fill.area}${line}${dots}</svg>`;
 }
 
-function sparklineBig(points) {
+function sparklineBig(points, opts = {}) {
   const W = 680, H = 190, padX = 30, padY = 26, bottomLabelSpace = 22;
   const values = points.map(p => p.value);
   let minV = Math.min(...values), maxV = Math.max(...values);
@@ -1544,7 +1643,8 @@ function sparklineBig(points) {
   const plotH = H - padY - bottomLabelSpace;
   const coords = points.map((p, i) => {
     const x = n > 1 ? padX + i * xStep : W / 2;
-    const y = padY + ((p.value - minV) / (maxV - minV)) * (plotH - padY);
+    const frac = opts.higherIsBetter ? (maxV - p.value) / (maxV - minV) : (p.value - minV) / (maxV - minV);
+    const y = padY + frac * (plotH - padY);
     return { x, y, p };
   });
   const poly = coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
@@ -1694,7 +1794,8 @@ function renderSpeedTeamView(reportType, athletes) {
     <th class="num" style="width:14%;">Best Time</th>
     <th class="num" style="width:14%;">Change</th>
   </tr></thead><tbody>`;
-  for (const a of athletes) {
+  const listed = orderForTeamList(athletes, a => a.best, false);
+  for (const a of listed) {
     const delta = a.testsCount >= 2 ? a.current - a.first : null;
     let deltaCell = '<span class="sub">-</span>';
     if (delta !== null) {
@@ -1717,6 +1818,7 @@ function renderSpeedTeamView(reportType, athletes) {
   // here yet.
   if (reportType !== 'agility' && speedData) {
     const untested = getUntestedSpeedAthletes(speedData.rows, SPEED_TEST_NAMES[reportType]);
+    if (getTeamSort() === 'alpha') untested.sort(compareByLastName);
     for (const name of untested) {
       html += `<tr>
         <td><span class="sub">-</span></td>
@@ -1729,9 +1831,9 @@ function renderSpeedTeamView(reportType, athletes) {
   document.getElementById('rosterTable').innerHTML = html;
 
   const label = SPEED_TEST_LABELS[reportType];
-  document.getElementById('outSubtitle').textContent = `Team Summary  //  Ranked by Current ${label} Time (Fastest First)`;
-  document.getElementById('footnote').textContent =
-    'Ranked by most recent test time, fastest first. "Change" compares the most recent test to each athlete\'s first test on file; athletes with only one test show no change value.';
+  document.getElementById('outSubtitle').textContent = teamSortSubtitle(`Team Summary  //  Ranked by Current ${label} Time (Fastest First)`);
+  document.getElementById('footnote').textContent = teamSortFootnote(
+    'Ranked by most recent test time, fastest first. "Change" compares the most recent test to each athlete\'s first test on file; athletes with only one test show no change value.');
 
   const cardsWrap = document.getElementById('speedCards');
   cardsWrap.style.display = 'flex';
@@ -1741,7 +1843,7 @@ function renderSpeedTeamView(reportType, athletes) {
   const sharedRange = axisMode === 'team' ? teamSharedRange(athletes.map(a => a.points)) : null;
 
   let cardsHtml = '';
-  for (const a of athletes) {
+  for (const a of listed) {
     const delta = a.testsCount >= 2 ? a.current - a.first : null;
     let deltaHtml = '<div class="s-card-delta flat">Single test on file</div>';
     if (delta !== null) {
@@ -1946,6 +2048,29 @@ function detectHawkinDateFormat(rawRows, fallback = 'DMY') {
   return fallback;
 }
 
+// When every date in a file is ambiguous, the Hawkin export's file name settles
+// it: it carries the export range as MM_DD_YY-MM_DD_YY. Whichever reading puts
+// every row inside that range wins; otherwise `fallback` is used.
+function resolveHawkinDateFormat(rawRows, fallback = 'DMY') {
+  const detected = detectHawkinDateFormat(rawRows, null);
+  if (detected) return detected;
+  const filename = forceData && forceData.rows === rawRows ? forceData.filename : '';
+  const m = String(filename || '').match(/(\d{2})_(\d{2})_(\d{2})-(\d{2})_(\d{2})_(\d{2})/);
+  if (m) {
+    const lo = `20${m[3]}-${m[1]}-${m[2]}`;
+    const hi = `20${m[6]}-${m[4]}-${m[5]}`;
+    const fits = (fmt) => rawRows.every(r => {
+      const d = parseHawkinDateTime(r['Date'], '', fmt);
+      return !d || (d.date >= lo && d.date <= hi);
+    });
+    const mdy = fits('MDY');
+    const dmy = fits('DMY');
+    if (mdy && !dmy) return 'MDY';
+    if (dmy && !mdy) return 'DMY';
+  }
+  return fallback;
+}
+
 function parseHawkinDateTime(dateStr, timeStr, format) {
   const parts = String(dateStr || '').split('/').map(s => s.trim());
   if (parts.length !== 3) return null;
@@ -1966,7 +2091,7 @@ function parseCmjRows(rawRows) {
   if (detectForceSource(rawRows) === 'vald') return parseValdCmjRows(rawRows);
   const { start, end } = getForceDateBounds();
   const excludeSet = getExcludeSet('forceExcludeNames');
-  const dateFormat = detectHawkinDateFormat(rawRows);
+  const dateFormat = resolveHawkinDateFormat(rawRows);
   // Every chart uses standard CMJ trials only. Arm-swing and combo segments are
   // a different movement and inflate jump height. A file with no Segment column
   // at all can't be filtered, so it is used as-is.
@@ -2483,7 +2608,8 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
     <th class="num" style="width:12%;">Tests Taken</th>
     <th class="num" style="width:14%;">Change</th>
   </tr></thead><tbody>`;
-  for (const a of athletes) {
+  const listed = orderForTeamList(athletes, a => a.best, true);
+  for (const a of listed) {
     const delta = a.testsCount >= 2 ? a.current - a.first : null;
     let deltaCell = '<span class="sub">-</span>';
     if (delta !== null) {
@@ -2503,9 +2629,9 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
   html += '</tbody>';
   document.getElementById('rosterTable').innerHTML = html;
 
-  document.getElementById('outSubtitle').textContent = `Team Summary  //  Ranked by Current ${cmjMetricLabel(metricKey)} (Highest First)`;
-  document.getElementById('footnote').textContent =
-    'Ranked by most recent test day, highest first. "Change" compares the most recent test to each athlete\u2019s first test on file; athletes with only one test show no change value. Where several jumps were logged on one day, the best attempt is used.';
+  document.getElementById('outSubtitle').textContent = teamSortSubtitle(`Team Summary  //  Ranked by Current ${cmjMetricLabel(metricKey)} (Highest First)`);
+  document.getElementById('footnote').textContent = teamSortFootnote(
+    'Ranked by most recent test day, highest first. "Change" compares the most recent test to each athlete\u2019s first test on file; athletes with only one test show no change value. Where several jumps were logged on one day, the best attempt is used.');
 
   const glossary = cmjGlossaryEntry(metricKey);
   const metricNoteEl = document.getElementById('cmjMetricFootnote');
@@ -2522,7 +2648,7 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
   const sharedRange = axisMode === 'team' ? teamSharedRange(athletes.map(a => a.points)) : null;
 
   let cardsHtml = '';
-  for (const a of athletes) {
+  for (const a of listed) {
     const delta = a.testsCount >= 2 ? a.current - a.first : null;
     let deltaHtml = '<div class="s-card-delta flat">Single test on file</div>';
     if (delta !== null) {
@@ -3065,6 +3191,250 @@ function renderCmjReport() {
   document.getElementById('footnote').textContent = '';
 }
 
+/* ---------------- IMTP Report (Force - Hawkin Dynamics Isometric Test) ---------------- */
+function isHawkinImtpHeaders(keys) {
+  return keys.includes('Peak Force') && keys.includes('L|R Peak Force') && keys.includes('System Weight') && !keys.includes('Jump Height');
+}
+
+// Mid-Thigh Pull trials only. Newer Hawkin exports name the segment
+// ("Isometric Test-Mid-Thigh Pull:1"); older ones leave it blank, and those are
+// kept. Other isometric positions (for example Belt Squat) are dropped.
+function isImtpSegment(segment) {
+  const s = String(segment || '').trim();
+  return s === '' || /^Isometric Test-Mid-Thigh Pull:\d+$/.test(s);
+}
+
+function parseImtpRows(rawRows) {
+  const { start, end } = getForceDateBounds();
+  const excludeSet = getExcludeSet('forceExcludeNames');
+  const dateFormat = resolveHawkinDateFormat(rawRows);
+  const rows = [];
+  for (const r of rawRows) {
+    const excludedFlag = String(r['Excluded'] || '').trim().toLowerCase();
+    if (excludedFlag && excludedFlag !== 'false' && excludedFlag !== 'nan') continue;
+    if (!isImtpSegment(r['Segment'])) continue;
+    const dt = parseHawkinDateTime(r['Date'], r['Time'], dateFormat);
+    if (!dt) continue;
+    if (start && dt.date < start) continue;
+    if (end && dt.date > end) continue;
+    const name = cleanName(r['Name']);
+    if (!name || excludeSet.has(name.toLowerCase())) continue;
+    const peakForce = numOrNull(r['Peak Force']);
+    if (peakForce === null) continue;
+    const relPct = numOrNull(r['Relative Peak Force']);
+    rows.push({
+      name,
+      date: dt.date,
+      sortKey: dt.sortKey,
+      systemWeight: numOrNull(r['System Weight']),
+      peakForce,
+      relPeak: relPct === null ? null : relPct / 100,
+      lr: numOrNull(r['L|R Peak Force']),
+    });
+  }
+  rows.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+  return rows;
+}
+
+// One test per day: the trial with the highest Peak Force, with its own
+// weight, relative force and L|R so a day's numbers come from one real pull.
+function imtpDailyBest(rows) {
+  const byDate = new Map();
+  for (const r of rows) {
+    const cur = byDate.get(r.date);
+    if (!cur || r.peakForce > cur.peakForce) byDate.set(r.date, r);
+  }
+  return Array.from(byDate.values()).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+}
+
+// Positive = left-leg bias, negative = right-leg bias. Under 9% green,
+// 9% to under 15% yellow, 15% or more red (increased injury risk).
+// Classified from the same 1-decimal value that is displayed, so "15.0%" is
+// never shown with a yellow flag.
+function imtpLrFlag(lr) {
+  const a = Math.abs(Number(lr.toFixed(1)));
+  if (a >= 15) return { cls: 'red', label: 'Red Flag' };
+  if (a >= 9) return { cls: 'yellow', label: 'Yellow Flag' };
+  return { cls: 'green', label: 'Balanced' };
+}
+
+function imtpLrText(lr) {
+  if (lr === null) return '-';
+  const rounded = Number(lr.toFixed(1));
+  const side = rounded > 0 ? ' L' : rounded < 0 ? ' R' : '';
+  return `${Math.abs(rounded).toFixed(1)}%${side}`;
+}
+
+function imtpLrCell(lr) {
+  if (lr === null) return '<span class="sub">-</span>';
+  const f = imtpLrFlag(lr);
+  return `${imtpLrText(lr)}<span class="lr-flag ${f.cls}">${f.label}</span>`;
+}
+
+const fmtNewtons = (v) => (v === null ? '-' : `${Math.round(v).toLocaleString('en-US')} N`);
+const fmtXbw = (v) => (v === null ? '-' : `${v.toFixed(2)} xBW`);
+
+const IMTP_LR_FOOTNOTE = 'L|R Peak Force: a positive value means a bias toward the left leg, a negative value toward the right leg (shown as L or R). Under 9% is balanced (green), 9-15% is a yellow flag, 15% or more is a red flag for increased injury risk.';
+const IMTP_METHOD_NOTE = 'Mid-Thigh Pull trials only. Where several pulls were logged on one day, the pull with the highest Peak Force is used.';
+
+function buildImtpAthletes(parsedRows) {
+  const byAthlete = new Map();
+  for (const r of parsedRows) {
+    if (!byAthlete.has(r.name)) byAthlete.set(r.name, []);
+    byAthlete.get(r.name).push(r);
+  }
+  const out = [];
+  for (const [name, rows] of byAthlete) {
+    const days = imtpDailyBest(rows);
+    if (!days.length) continue;
+    out.push({ Athlete: name, days, latest: days[days.length - 1] });
+  }
+  // Ranked by most recent Relative Peak Force, highest first.
+  out.sort((a, b) => (b.latest.relPeak ?? -1) - (a.latest.relPeak ?? -1) || b.latest.peakForce - a.latest.peakForce);
+  out.forEach((a, i) => { a.Rank = i + 1; });
+  return out;
+}
+
+function renderImtp() {
+  const reportContent = document.getElementById('reportContent');
+  const emptyState = document.getElementById('emptyState');
+  const cardsWrap = document.getElementById('speedCards');
+  const showEmpty = (msg) => {
+    emptyState.textContent = msg;
+    emptyState.style.display = 'block';
+    reportContent.style.display = 'none';
+  };
+  if (!forceData) return showEmpty('Drop a Hawkin Dynamics Isometric Test (IMTP) export CSV to generate a report preview.');
+  if (forceData.kind !== 'imtp') return showEmpty('This file is a CMJ export, not an Isometric Test (IMTP) export. Choose CMJ Profile Report under Test Type, or drop an IMTP export.');
+  const parsed = parseImtpRows(forceData.rows);
+  if (!parsed.length) return showEmpty('No Mid-Thigh Pull tests found in this file for the selected dates.');
+
+  emptyState.style.display = 'none';
+  reportContent.style.display = 'block';
+  document.getElementById('cmjMetricFootnote').style.display = 'none';
+  cardsWrap.innerHTML = '';
+  cardsWrap.style.display = 'none';
+
+  const athletes = buildImtpAthletes(parsed);
+  const coach = document.getElementById('coachName').value;
+  const title = document.getElementById('reportTitle').value || REPORT_TITLES.imtp;
+  document.getElementById('outTitle').textContent = title;
+
+  if (getReportScope() === 'team') {
+    document.getElementById('forceAthleteField').style.display = 'none';
+    const team = document.getElementById('teamName').value || 'Team Name';
+    const dates = parsed.map(r => r.date).sort();
+    document.getElementById('outTeam').textContent = team;
+    document.getElementById('footTeam').textContent = `${team} IMTP Report`;
+    document.getElementById('outMeta').textContent =
+      `${fmtDateLong(dates[0])} to ${fmtDateLong(dates[dates.length - 1])}${coach ? '  •  Created for Coach ' + coach : ''}`;
+    renderImtpTeam(athletes);
+    return;
+  }
+
+  const names = athletes.map(a => a.Athlete).sort();
+  const selectedName = populateForceAthleteSelect(names);
+  const athlete = athletes.find(a => a.Athlete === selectedName) || athletes[0];
+  if (!teamNameTouched) document.getElementById('teamName').value = athlete.Athlete;
+  const shownName = document.getElementById('teamName').value || athlete.Athlete;
+  const days = athlete.days;
+  document.getElementById('outTeam').textContent = shownName;
+  document.getElementById('footTeam').textContent = `${shownName} IMTP Report`;
+  document.getElementById('outMeta').textContent =
+    `${days.length} test day${days.length > 1 ? 's' : ''} on file - ${fmtDateLong(days[0].date)} to ${fmtDateLong(days[days.length - 1].date)}`;
+  renderImtpAthlete(athlete, shownName);
+}
+
+function renderImtpAthlete(athlete, shownName) {
+  const days = athlete.days;
+  const latest = athlete.latest;
+  const flag = latest.lr === null ? null : imtpLrFlag(latest.lr);
+  document.getElementById('statStrip').innerHTML = `
+    <div class="stat-box"><div class="num">${fmtNewtons(latest.systemWeight)}</div><div class="label">System Weight</div></div>
+    <div class="stat-box"><div class="num">${fmtNewtons(latest.peakForce)}</div><div class="label">Peak Force</div></div>
+    <div class="stat-box"><div class="num">${fmtXbw(latest.relPeak)}</div><div class="label">Relative Peak Force</div></div>
+    <div class="stat-box"><div class="num">${imtpLrText(latest.lr)}</div><div class="label">L|R Peak Force${flag ? `<span class="lr-flag ${flag.cls}">${flag.label}</span>` : ''}</div></div>
+  `;
+
+  const bestPeak = Math.max(...days.map(d => d.peakForce));
+  let html = `<thead><tr>
+    <th style="width:22%;">Test Date</th>
+    <th class="num" style="width:18%;">System Weight</th>
+    <th class="num" style="width:18%;">Peak Force</th>
+    <th class="num" style="width:18%;">Relative Peak Force</th>
+    <th class="num" style="width:24%;">L|R Peak Force</th>
+  </tr></thead><tbody>`;
+  days.forEach((d) => {
+    const isBest = d.peakForce === bestPeak;
+    html += `<tr class="${isBest ? 'top3' : ''}">
+      <td>${fmtDateLong(d.date)}${isBest ? ' <span class="sub" style="color:var(--accent-dark);font-weight:700;">BEST</span>' : ''}</td>
+      <td class="num">${fmtNewtons(d.systemWeight)}</td>
+      <td class="num">${fmtNewtons(d.peakForce)}</td>
+      <td class="num">${fmtXbw(d.relPeak)}</td>
+      <td class="num">${imtpLrCell(d.lr)}</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('rosterTable').innerHTML = html;
+
+  document.getElementById('outSubtitle').textContent = `Individual Athlete Report  //  ${shownName}  //  Hawkin Dynamics IMTP`;
+  document.getElementById('footnote').textContent = `${IMTP_METHOD_NOTE} ${IMTP_LR_FOOTNOTE}`;
+
+  const relPoints = days.filter(d => d.relPeak !== null).map(d => ({ date: d.date, value: d.relPeak }));
+  if (relPoints.length) {
+    const cardsWrap = document.getElementById('speedCards');
+    cardsWrap.style.display = 'flex';
+    cardsWrap.innerHTML = `<div class="s-card wide">
+        <div class="s-card-head">
+          <span class="name">Relative Peak Force (xBW) - Progress Over Time</span>
+          <span class="rank">${days.length} test day${days.length > 1 ? 's' : ''} on file</span>
+        </div>
+        <div class="s-card-body">${sparklineBig(relPoints, { higherIsBetter: true })}</div>
+      </div>`;
+  }
+}
+
+function renderImtpTeam(athletes) {
+  const withRel = athletes.filter(a => a.latest.relPeak !== null);
+  const avgRel = withRel.length ? withRel.reduce((s, a) => s + a.latest.relPeak, 0) / withRel.length : null;
+  const leader = athletes[0] || null;
+  const flagged = athletes.filter(a => a.latest.lr !== null && Math.abs(a.latest.lr) >= 9).length;
+  document.getElementById('statStrip').innerHTML = `
+    <div class="stat-box"><div class="num">${athletes.length}</div><div class="label">Athletes Tested</div></div>
+    <div class="stat-box"><div class="num">${fmtXbw(avgRel)}</div><div class="label">Team Avg Relative Peak Force</div></div>
+    <div class="stat-box"><div class="num">${leader ? fmtXbw(leader.latest.relPeak) : '-'}</div><div class="label">${leader ? 'Leader - ' + leader.Athlete : 'Leader'}</div></div>
+    <div class="stat-box"><div class="num">${flagged}</div><div class="label">L|R Flags (Yellow or Red)</div></div>
+  `;
+
+  let html = `<thead><tr>
+    <th style="width:6%;">Rank</th>
+    <th style="width:22%;">Athlete</th>
+    <th class="num" style="width:10%;">Tests Recorded</th>
+    <th class="num" style="width:13%;">System Weight</th>
+    <th class="num" style="width:13%;">Peak Force</th>
+    <th class="num" style="width:14%;">Relative Peak Force</th>
+    <th class="num" style="width:22%;">L|R Peak Force</th>
+  </tr></thead><tbody>`;
+  for (const a of orderForTeamList(athletes, a => Math.max(...a.days.map(d => d.relPeak ?? -Infinity)), true)) {
+    const l = a.latest;
+    html += `<tr class="${a.Rank <= 3 ? 'top3' : ''}">
+      <td><span class="rank-badge ${a.Rank <= 3 ? 'gold' : ''}">${a.Rank}</span></td>
+      <td>${a.Athlete}</td>
+      <td class="num">${a.days.length}</td>
+      <td class="num">${fmtNewtons(l.systemWeight)}</td>
+      <td class="num">${fmtNewtons(l.peakForce)}</td>
+      <td class="num">${fmtXbw(l.relPeak)}</td>
+      <td class="num">${imtpLrCell(l.lr)}</td>
+    </tr>`;
+  }
+  html += '</tbody>';
+  document.getElementById('rosterTable').innerHTML = html;
+
+  document.getElementById('outSubtitle').textContent = teamSortSubtitle('Team Summary  //  Ranked by Most Recent Relative Peak Force (Highest First)');
+  const orderNote = getTeamSort() === 'bestEver' ? ' Order and rank use each athlete\u2019s best Relative Peak Force on file.' : '';
+  document.getElementById('footnote').textContent = `Values are each athlete's most recent test day.${orderNote} ${IMTP_METHOD_NOTE} ${IMTP_LR_FOOTNOTE}`;
+}
+
 function rankRows(rows) {
   const sorted = [...rows].sort((a, b) =>
     b.Completed - a.Completed ||
@@ -3214,7 +3584,20 @@ function render() {
   const cmjWrap = document.getElementById('cmjReport');
   document.getElementById('cmjMetricFootnote').style.display = 'none';
 
+  if (currentReportType === 'imtp') {
+    cmjWrap.style.display = 'none';
+    document.getElementById('cmjTop5Grid').style.display = 'none';
+    renderImtp();
+    return;
+  }
+
   if (currentReportType === 'force') {
+    if (forceData && forceData.kind === 'imtp') {
+      document.getElementById('emptyState').textContent = 'This file is an Isometric Test (IMTP) export. Choose IMTP Report under Test Type, or drop a CMJ export.';
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('reportContent').style.display = 'none';
+      return;
+    }
     if (forceData && forceData.source === 'vald' && !forceData.jumpHeightMethod) {
       document.getElementById('emptyState').textContent = 'This VALD export has no Jump Height (Imp-Mom) column. Re-export from ForceDecks with Jump Height (Imp-Mom) in Inches included.';
       document.getElementById('emptyState').style.display = 'block';
@@ -3366,6 +3749,7 @@ function setupDropzone(dzId, fileInputId, fileLabelId, onLoaded, expectedCategor
       const mismatched = detected && (
         detected.category !== expectedCategory
         || (detected.category === 'speed_category' && detected.subtype && detected.subtype !== currentReportType)
+        || (detected.category === 'force_category' && detected.subtype && detected.subtype !== currentReportType)
       );
       if (mismatched) {
         document.getElementById(CATEGORY_FILE_LABEL_IDS[detected.category]).textContent = file.name;
@@ -3395,6 +3779,9 @@ function sniffCsvReportType(rows) {
   const keys = rawKeys.map(normCsvKey);
   const has = (k) => keys.includes(k);
 
+  if (isHawkinImtpHeaders(keys)) {
+    return { category: 'force_category', subtype: 'imtp', source: 'hawkin' };
+  }
   if (isValdCmjHeaders(keys)) {
     return { category: 'force_category', subtype: 'force', source: 'vald' };
   }
@@ -3409,7 +3796,7 @@ function sniffCsvReportType(rows) {
     // in at least one date column before counting a test as present.
     const dateKeys = rawKeys.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(normCsvKey(k)));
     const hasData = (testName) => rows.some(r => {
-      if (String(r['Test'] || '').trim().toLowerCase() !== testName) return false;
+      if (!isSpeedTest(r['Test'], testName)) return false;
       return dateKeys.some(k => String(r[k] ?? '').trim() !== '');
     });
     let subtype = null;
@@ -3433,7 +3820,7 @@ function switchToDetectedReportType(detected) {
     categorySelect.value = detected.category;
     categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
   }
-  if (detected.category === 'speed_category' && detected.subtype) {
+  if ((detected.category === 'speed_category' || detected.category === 'force_category') && detected.subtype) {
     const radio = document.querySelector(`input[name="testType"][value="${detected.subtype}"]`);
     if (radio && !radio.checked) {
       radio.checked = true;
@@ -3460,7 +3847,8 @@ function loadSpeedData(data) {
 }
 
 function loadForceData(data) {
-  data.source = detectForceSource(data.rows);
+  data.kind = isHawkinImtpHeaders(Object.keys(data.rows[0] || {}).map(normCsvKey)) ? 'imtp' : 'cmj';
+  data.source = data.kind === 'imtp' ? 'hawkin' : detectForceSource(data.rows);
   if (data.source === 'vald') {
     const jh = pickValdJumpHeightColumn(Object.keys(data.rows[0] || {}).map(normCsvKey));
     data.jumpHeightMethod = jh ? jh.method : null;
@@ -3471,7 +3859,7 @@ function loadForceData(data) {
   // new file rather than being constrained by the last file's dates.
   document.getElementById('forceStartDate').value = '';
   document.getElementById('forceEndDate').value = '';
-  const allRows = parseCmjRows(data.rows);
+  const allRows = data.kind === 'imtp' ? parseImtpRows(data.rows) : parseCmjRows(data.rows);
   if (allRows.length) {
     document.getElementById('forceStartDate').value = allRows[0].date;
     document.getElementById('forceEndDate').value = allRows[allRows.length - 1].date;
@@ -3515,7 +3903,7 @@ setupDropzone('dzSpeed', 'fileSpeed', 'dzSpeedFile', loadSpeedData, 'speed_categ
 setupDropzone('dzForce', 'fileForce', 'dzForceFile', loadForceData, 'force_category');
 ['forceStartDate', 'forceEndDate'].forEach(id => {
   document.getElementById(id).addEventListener('change', () => {
-    if (currentReportType === 'force') render();
+    if (currentReportType === 'force' || currentReportType === 'imtp') render();
   });
 });
 
@@ -3911,6 +4299,7 @@ function sanitizeFilenamePart(s) {
 const FILENAME_TEST_TYPES = {
   force: 'Force Report-CMJ',
   upper_body_power: 'Force Report-PlyoPU',
+  imtp: 'Force Report-IMTP',
   speed10: 'Speed10',
   speed30: 'Speed30',
   agility: 'Agility',
@@ -4157,6 +4546,7 @@ const REPORT_LABELS = {
   training_summary: 'Lumin Training Summary',
   force: 'CMJ Profile Report',
   upper_body_power: 'Plyo Push Up Report',
+  imtp: 'IMTP Report',
   speed10: 'Speed Report - 10 Yard Acceleration',
   speed30: 'Speed Report - 30 Yard Sprint',
   agility: 'Agility Report 5-10-5',
@@ -4167,12 +4557,13 @@ const REPORT_TEST_TYPE = {
   agility: '5-10-5 Agility Test',
 };
 const READY_TYPES = new Set(['training_summary', 'speed10', 'speed30', 'agility']);
-const SCOPE_TYPES = new Set(['force', 'upper_body_power', 'speed10', 'speed30', 'agility']);
+const SCOPE_TYPES = new Set(['force', 'upper_body_power', 'imtp', 'speed10', 'speed30', 'agility']);
 
 const CATEGORY_SUBTYPES = {
   force_category: [
     { value: 'force', label: 'CMJ Profile Report' },
     { value: 'upper_body_power', label: 'Plyo Push Up Report' },
+    { value: 'imtp', label: 'IMTP Report' },
   ],
   speed_category: [
     { value: 'speed10', label: '10 Yard Acceleration' },
@@ -4211,8 +4602,8 @@ function updateSpeedSourceInstruction() {
 
 function isReportReady(type, scope) {
   if (READY_TYPES.has(type)) return true;
-  // CMJ Profile Report is built for both athlete and team scopes.
-  if (type === 'force') return true;
+  // CMJ Profile Report and IMTP Report are built for both athlete and team scopes.
+  if (type === 'force' || type === 'imtp') return true;
   return false;
 }
 
@@ -4264,6 +4655,7 @@ function updateReadyState() {
   const isReady = isReportReady(val, scope);
 
   document.getElementById('controlsWrap').style.display = isReady ? 'grid' : 'none';
+  document.getElementById('teamSortRow').style.display = scope === 'team' ? 'block' : 'none';
   document.getElementById('reportWrap').style.display = isReady ? 'block' : 'none';
   document.getElementById('comingSoonPanel').style.display = isReady ? 'none' : 'block';
   document.getElementById('comingSoonTitle').textContent = `${REPORT_LABELS[val]} - Coming Soon`;
@@ -4276,9 +4668,11 @@ function updateReadyState() {
   document.getElementById('speedCompareToPanel').style.display = speedTeamMode ? 'block' : 'none';
   setPanelToggleVisible('speed', speedTeamMode);
 
-  document.getElementById('forceColumnWrap').style.display = (val === 'force') ? 'flex' : 'none';
+  document.getElementById('forceColumnWrap').style.display = (val === 'force' || val === 'imtp') ? 'flex' : 'none';
   const forceTeamMode = (val === 'force' && scope === 'team');
-  setPanelToggleVisible('force', forceTeamMode);
+  setPanelToggleVisible('force', (val === 'force' || val === 'imtp') && scope === 'team');
+  // Compare To (sex norms, chart scale) only applies to the CMJ report.
+  document.getElementById('cmjCompareToPanel').style.display = val === 'imtp' ? 'none' : 'block';
   document.getElementById('cmjTeamTestPanel').style.display = forceTeamMode ? 'block' : 'none';
   // Compare To now hosts two different controls depending on scope — the axis
   // toggle only matters where there's a team of charts to share a scale across,
@@ -4336,6 +4730,10 @@ document.getElementById('reportCategory').addEventListener('change', (e) => {
     r.addEventListener('change', (ev) => applyReportType(ev.target.value));
   });
   applyReportType(options[0].value);
+});
+
+document.querySelectorAll('input[name="teamSort"]').forEach(r => {
+  r.addEventListener('change', () => { if (isReportReady(currentReportType, getReportScope())) render(); });
 });
 
 document.querySelectorAll('input[name="reportScope"]').forEach(r => {
