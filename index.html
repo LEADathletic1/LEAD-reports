@@ -2612,15 +2612,17 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
 
   let html = `<thead><tr>
     <th style="width:6%;">Rank</th>
-    <th style="width:26%;">Athlete</th>
-    <th class="num" style="width:14%;">Current</th>
-    <th class="num" style="width:14%;">Best</th>
-    <th class="num" style="width:12%;">Tests Taken</th>
+    <th style="width:24%;">Athlete</th>
+    <th class="num" style="width:14%;">Tests Recorded</th>
+    <th class="num" style="width:14%;">First Test</th>
+    <th class="num" style="width:14%;">Last Test</th>
+    <th class="num" style="width:14%;">Best Test</th>
     <th class="num" style="width:14%;">Change</th>
   </tr></thead><tbody>`;
   const listed = orderForTeamList(athletes, a => a.best, true);
   for (const a of listed) {
-    const delta = a.testsCount >= 2 ? a.current - a.first : null;
+    // Change in the table is first test to best test.
+    const delta = a.testsCount >= 2 ? a.best - a.first : null;
     let deltaCell = '<span class="sub">-</span>';
     if (delta !== null) {
       // Higher is better here, so a rise is an improvement.
@@ -2630,9 +2632,10 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
     html += `<tr class="${a.Rank <= 3 ? 'top3' : ''}">
       <td><span class="rank-badge ${a.Rank <= 3 ? 'gold' : ''}">${a.Rank}</span></td>
       <td>${a.Athlete}</td>
+      <td class="num">${a.testsCount}</td>
+      <td class="num">${meta.fmt(a.first)}</td>
       <td class="num">${meta.fmt(a.current)}</td>
       <td class="num">${meta.fmt(a.best)}</td>
-      <td class="num">${a.testsCount}</td>
       <td class="num">${deltaCell}</td>
     </tr>`;
   }
@@ -2641,7 +2644,7 @@ function renderCmjTeamMetric(parsedRows, metricKey) {
 
   document.getElementById('outSubtitle').textContent = teamSortSubtitle(`Team Summary  //  Ranked by Current ${cmjMetricLabel(metricKey)} (Highest First)`);
   document.getElementById('footnote').textContent = teamSortFootnote(
-    'Ranked by most recent test day, highest first. "Change" compares the most recent test to each athlete\u2019s first test on file; athletes with only one test show no change value. Where several jumps were logged on one day, the best attempt is used.');
+    'Ranked by most recent test day, highest first. Where several jumps were logged on one day, the best attempt is used.');
 
   const glossary = cmjGlossaryEntry(metricKey);
   const metricNoteEl = document.getElementById('cmjMetricFootnote');
