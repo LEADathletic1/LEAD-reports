@@ -28,7 +28,7 @@
   }
 
   :root {
-    --accent: #B8933D;
+    --accent: #C19B32;
     --accent-dark: #8C6D25;
     --accent-light: #F3E9D2;
     --black: #111111;
@@ -1136,8 +1136,8 @@
       <div class="field" style="margin-bottom:22px;">
         <label for="accentHex">Accent Color</label>
         <div class="color-row">
-          <input type="color" id="accentPicker" value="#B8933D">
-          <input type="text" id="accentHex" value="#B8933D">
+          <input type="color" id="accentPicker" value="#C19B32">
+          <input type="text" id="accentHex" value="#C19B32">
         </div>
         <div class="swatch-row" id="presetSwatches"></div>
       </div>
@@ -1225,7 +1225,7 @@
 <script>
 const NAME_OVERRIDES = { 'parker.morris@student.rjuhsd.us': 'Parker Morris' };
 const PRESETS = [
-  { hex: '#B8933D', name: 'LEAD Gold' },
+  { hex: '#C19B32', name: 'LEAD Gold' },
   { hex: '#b72027', name: 'Sierra College' },
   { hex: '#773141', name: 'Woodcreek/Whitney' },
   { hex: '#badcee', name: 'Oakmont' },
@@ -1428,7 +1428,7 @@ function setLuminMode(on, { persist = true, skipClass = false } = {}) {
     picker.value = LUMIN_ACCENT;
     if (!skipClass) applyAccent(LUMIN_ACCENT);
   } else {
-    const restore = setLuminMode._priorAccent || '#B8933D';
+    const restore = setLuminMode._priorAccent || '#C19B32';
     setLuminMode._priorAccent = null;
     hexInput.value = restore;
     picker.value = restore;
@@ -4834,7 +4834,7 @@ document.getElementById('luminModeToggle').addEventListener('change', (e) => {
   });
 });
 
-applyAccent('#B8933D');
+applyAccent('#C19B32');
 // Restore the saved theme before the first render so the report is drawn with
 // the right colors immediately rather than flashing light then switching.
 if (loadLuminPreference()) setLuminMode(true, { persist: false });
